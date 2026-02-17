@@ -1,0 +1,17 @@
+function validar() {
+    const user = document.getElementById('user').value;
+    const pass = document.getElementById('pass').value;
+    const urlScript = "AKfycbwL0mDEibp7_hBStjZVcyMRjN-MHYwKY3hv1EvpPpI7978NZT19SDtb9rQmyueFDLMsHQI";
+
+    fetch(`${urlScript}?accion=login&usuario=${user}&pass=${pass}`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert("¡Bienvenido!");
+            // Aquí pones lo que pase al entrar
+        } else {
+            document.getElementById('mensaje-error').innerText = "DATOS INCORRECTOS";
+            document.getElementById('mensaje-error').classList.remove('hidden');
+        }
+    });
+}
