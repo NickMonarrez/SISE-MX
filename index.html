@@ -42,7 +42,7 @@
         function validar() {
             const user = document.getElementById('user').value;
             const pass = document.getElementById('pass').value;
-            const urlScript = "https://script.google.com/macros/s/AKfycbwL0mDEibp7_hBStjZVcyMRjN-MHYwKY3hv1EvpPpI7978NZT19SDtb9rQmyueFDLMsHQ/exec";
+            const urlScript = "https://script.google.com/macros/s/AKfycbzESAvGzAnMAcnQ-AXGxhMuypt52jruFoBvLadWiDrf4ZfturqlyhhbDEdzPS6Qqg5p1A/exec";
 
             fetch(`${urlScript}?accion=login&usuario=${user}&pass=${pass}`)
             .then(res => res.json())
