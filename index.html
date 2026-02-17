@@ -1,17 +1,62 @@
-function validar() {
-    const user = document.getElementById('user').value;
-    const pass = document.getElementById('pass').value;
-    const urlScript = "https://script.google.com/macros/s/AKfycbwL0mDEibp7_hBStjZVcyMRjN-MHYwKY3hv1EvpPpI7978NZT19SDtb9rQmyueFDLMsHQ/exec";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISE MX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { overflow-x: hidden; touch-action: manipulation; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
-    fetch(`${urlScript}?accion=login&usuario=${user}&pass=${pass}`)
-    .then(res => res.json())
-    .then(data => {
-        if(data.success) {
-            alert("¡Bienvenido!");
-            // Aquí pones lo que pase al entrar
-        } else {
-            document.getElementById('mensaje-error').innerText = "DATOS INCORRECTOS";
-            document.getElementById('mensaje-error').classList.remove('hidden');
+    <div class="glass w-full max-w-[420px] p-6 sm:p-10 rounded-[2.5rem] shadow-2xl transition-all border border-white/20">
+        <div class="text-center">
+            <h1 class="text-5xl font-black text-[#8b8a5d] mb-1 tracking-tighter">SISE<span class="text-slate-300 font-light">MX</span></h1>
+            <p class="text-slate-400 text-[10px] mb-8 italic uppercase tracking-[0.3em] font-bold">Sistema de Identificación Segura</p>
+        </div>
+
+        <div id="zona-interaccion" class="space-y-4">
+            <div id="mensaje-error" class="hidden bg-rose-50 text-rose-500 text-xs font-bold p-4 rounded-2xl text-center border border-rose-100 uppercase"></div>
+            
+            <input type="text" id="user" placeholder="MATRÍCULA" class="w-full px-6 py-4 rounded-2xl bg-white border-2 border-transparent focus:border-[#8b8a5d] outline-none font-bold shadow-sm transition-all uppercase">
+            <input type="password" id="pass" placeholder="CONTRASEÑA" class="w-full px-6 py-4 rounded-2xl bg-white border-2 border-transparent focus:border-[#8b8a5d] outline-none font-bold shadow-sm transition-all">
+            
+            <button onclick="validar()" class="w-full p-2 bg-gradient-to-r from-[#888c65] to-[#a3a87e] rounded-[2.5rem] shadow-xl active:scale-95 transition-all text-white">
+                <div class="flex items-center gap-4 ml-2">
+                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                    </div>
+                    <span class="font-black uppercase tracking-widest text-sm">Entrar</span>
+                </div>
+            </button>
+        </div>
+        
+        <p class="mt-10 text-[9px] text-slate-300 text-center uppercase font-bold">SISE MX™ · © 2026</p>
+    </div>
+
+    <script>
+        function validar() {
+            const user = document.getElementById('user').value;
+            const pass = document.getElementById('pass').value;
+            const urlScript = "https://script.google.com/macros/s/AKfycbwL0mDEibp7_hBStjZVcyMRjN-MHYwKY3hv1EvpPpI7978NZT19SDtb9rQmyueFDLMsHQ/exec";
+
+            fetch(`${urlScript}?accion=login&usuario=${user}&pass=${pass}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("¡Bienvenido!");
+                } else {
+                    const errorDiv = document.getElementById('mensaje-error');
+                    errorDiv.innerText = "DATOS INCORRECTOS";
+                    errorDiv.classList.remove('hidden');
+                }
+            })
+            .catch(err => alert("Error de conexión. Verifica que el Apps Script esté publicado para 'Cualquiera'."));
         }
-    });
-}
+    </script>
+</body>
+</html>
