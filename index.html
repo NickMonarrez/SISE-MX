@@ -1,7 +1,7 @@
 function validar() {
     const user = document.getElementById('user').value;
     const pass = document.getElementById('pass').value;
-    const urlScript = "AKfycbwL0mDEibp7_hBStjZVcyMRjN-MHYwKY3hv1EvpPpI7978NZT19SDtb9rQmyueFDLMsHQI";
+    const urlScript = "https://script.google.com/macros/s/AKfycbwL0mDEibp7_hBStjZVcyMRjN-MHYwKY3hv1EvpPpI7978NZT19SDtb9rQmyueFDLMsHQ/exec";
 
     fetch(`${urlScript}?accion=login&usuario=${user}&pass=${pass}`)
     .then(res => res.json())
