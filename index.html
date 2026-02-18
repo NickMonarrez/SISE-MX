@@ -352,7 +352,7 @@ function abrirEscaner() {
 
 async function verAsistencias(fechaManual = null) {
     const zona = document.getElementById('zona-interaccion');
-    const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
     
     // Si no se pasa fecha, usamos la de hoy por defecto
     const fechaHoy = new Date().toISOString().split('T')[0];
@@ -584,7 +584,7 @@ async function enviarIncidencia() {
     const otro = document.getElementById('inc-otro');
     
     // Usamos la misma URL que usamos en el login
-    const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec"; 
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec"; 
 
     if(!nombre.value) return alert("Selecciona un alumno");
 
@@ -750,8 +750,9 @@ function filtrarPorNombre() {
     }
 }
 // Esta función ahora controla tanto el botón de "Asistencias" como el de "Entradas y Salidas"
-function verRegistroPadre(fecha = null) {
+async function verRegistroPadre(fecha = null) {
     const matricula = userData ? userData.usuario : null;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
     if (!matricula) {
         alert("⚠️ Error: Sesión no válida.");
@@ -765,16 +766,40 @@ function verRegistroPadre(fecha = null) {
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cargando Expediente...</p>
         </div>`;
 
-    // Llamamos a la nueva función del servidor
-    google.script.run
-      .withSuccessHandler(function(res) {
+    try {
+        // Petición fetch para reemplazar google.script.run
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerExpedientePadre', 
+                matricula: matricula, 
+                fecha: fecha 
+            })
+        });
+
+        const res = await response.json();
+
         if (!res || res.error) {
-            zona.innerHTML = `<div class="p-10 text-center"><p class="text-red-500 font-black text-[10px] uppercase">${res ? res.error : 'No hay datos'}</p><button onclick="renderMenu()" class="mt-4 bg-gray-100 px-6 py-2 rounded-xl text-[9px] font-black uppercase">Volver</button></div>`;
+            zona.innerHTML = `
+                <div class="p-10 text-center">
+                    <p class="text-red-500 font-black text-[10px] uppercase">${res ? res.error : 'No hay datos'}</p>
+                    <button onclick="renderMenu()" class="mt-4 bg-gray-100 px-6 py-2 rounded-xl text-[9px] font-black uppercase">Volver</button>
+                </div>`;
             return;
         }
+
+        // Llamamos a tu función de renderizado que ya existe en el HTML
         renderizarVistaPadreModerna(res);
-      })
-      .obtenerExpedientePadre(matricula, fecha);
+
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = `
+            <div class="p-10 text-center">
+                <p class="text-red-500 font-black text-[10px] uppercase">Error de conexión con el servidor</p>
+                <button onclick="renderMenu()" class="mt-4 bg-gray-100 px-6 py-2 rounded-xl text-[9px] font-black uppercase">Volver</button>
+            </div>`;
+    }
 }
 
 function renderizarVistaPadreModerna(res) {
@@ -853,8 +878,11 @@ function renderizarVistaPadreModerna(res) {
 }
 
 
-function verReporteDetallado(matricula) {
+async function verReporteDetallado(matricula) {
     const zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+    
+    // Guardamos el estado actual por si hay error al cargar
     window.vistaPreviaGeneral = zona.innerHTML; 
 
     zona.innerHTML = `
@@ -863,14 +891,25 @@ function verReporteDetallado(matricula) {
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Generando Expediente...</p>
         </div>`;
 
-    google.script.run
-      .withSuccessHandler(function(res) {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerAsistenciasAlumno', 
+                matricula: matricula 
+            })
+        });
+
+        const res = await response.json();
+
         if (res.error) {
             alert("⚠️ " + res.error);
             zona.innerHTML = window.vistaPreviaGeneral;
             return;
         }
 
+        // Generamos el HTML del historial
         let listaHtml = res.asistencias.reverse().map(a => `
             <div class="flex justify-between items-center bg-white p-3 mb-2 rounded-2xl border border-gray-100 shadow-sm">
                 <div class="flex items-center gap-3">
@@ -881,21 +920,20 @@ function verReporteDetallado(matricula) {
             </div>
         `).join('');
 
+        // Renderizamos la vista detallada
         zona.innerHTML = `
             <div class="animar-reporte px-1">
                 <div class="bg-white/80 backdrop-blur-sm rounded-[2.5rem] p-8 text-slate-700 border border-slate-100 shadow-sm relative">
-                    
                     <div class="flex justify-between items-start mb-6 relative z-10">
                         <div class="flex-1 pr-4">
                             <h3 class="text-[14px] font-black uppercase leading-tight text-slate-800">${res.nombre}</h3>
                             <p class="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-1">${res.grupo} | MAT: ${matricula}</p>
                         </div>
-                        
-<div class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
-    <img src="${res.fotoUrl || 'https://via.placeholder.com/150'}" 
-         class="w-full h-full object-cover"
-         onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('${res.nombre}') + '&background=EBF4FF&color=7F9CF5'">
-</div>
+                        <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                            <img src="${res.fotoUrl || 'https://via.placeholder.com/150'}" 
+                                 class="w-full h-full object-cover"
+                                 onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('${res.nombre}') + '&background=EBF4FF&color=7F9CF5'">
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4 relative z-10">
@@ -920,8 +958,12 @@ function verReporteDetallado(matricula) {
                     🏠 VOLVER A ASISTENCIAS
                 </button>
             </div>`;
-      })
-      .obtenerAsistenciasAlumno(matricula);
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error de conexión al obtener el reporte detallado.");
+        zona.innerHTML = window.vistaPreviaGeneral;
+    }
 }
 
 
@@ -945,148 +987,216 @@ function regresarALista() {
         renderMenu(); // Esta es la función estándar de tu app para volver al inicio
     }
 }
-function verIncidenciasHijo() {
+async function verIncidenciasHijo() {
     if (!userData || !userData.usuario) {
         alert("No se encontró la matrícula del alumno.");
         return;
     }
 
     const zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+
     zona.innerHTML = `
         <div class="text-center p-10 animar-reporte">
             <div class="inline-block animate-spin w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full mb-4"></div>
             <p class="text-[10px] font-black text-gray-400 uppercase">Buscando reportes de incidencia...</p>
         </div>`;
 
-    // Llamamos a una nueva función en el servidor
-    google.script.run
-        .withSuccessHandler(function(res) {
-            if (res.error) {
-                zona.innerHTML = `<p class="text-center p-10 text-red-500 font-bold text-[10px] uppercase">${res.error}</p>`;
-                return;
-            }
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerIncidenciasAlumno', 
+                usuario: userData.usuario 
+            })
+        });
 
-            let htmlIncidencias = res.historial.map(inc => `
-                <div class="bg-white p-4 mb-3 rounded-2xl border-l-4 border-red-500 shadow-sm animar-reporte">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-[8px] font-black text-gray-400 uppercase">${inc.fecha}</span>
-                        <span class="bg-red-100 text-red-700 text-[7px] px-2 py-0.5 rounded-full font-black uppercase">${inc.atencion}</span>
-                    </div>
-                    <p class="text-[10px] font-black text-gray-800 uppercase mb-1">${inc.incidencia}</p>
-                    <p class="text-[9px] text-gray-500 leading-tight italic">"${inc.otro || 'Sin descripción adicional'}"</p>
+        const res = await response.json();
+
+        if (res.error) {
+            zona.innerHTML = `<p class="text-center p-10 text-red-500 font-bold text-[10px] uppercase">${res.error}</p>`;
+            return;
+        }
+
+        let htmlIncidencias = res.historial.map(inc => `
+            <div class="bg-white p-4 mb-3 rounded-2xl border-l-4 border-red-500 shadow-sm animar-reporte">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[8px] font-black text-gray-400 uppercase">${inc.fecha}</span>
+                    <span class="bg-red-100 text-red-700 text-[7px] px-2 py-0.5 rounded-full font-black uppercase">${inc.atencion}</span>
                 </div>
-            `).join('');
+                <p class="text-[10px] font-black text-gray-800 uppercase mb-1">${inc.incidencia}</p>
+                <p class="text-[9px] text-gray-500 leading-tight italic">"${inc.otro || 'Sin descripción adicional'}"</p>
+            </div>
+        `).join('');
 
-            zona.innerHTML = `
-                <div class="animar-reporte">
-                    <div class="bg-red-600 p-5 rounded-[2rem] text-white mb-4 shadow-lg">
-                        <h3 class="text-[11px] font-black uppercase">Reporte de Incidencias</h3>
-                        <p class="text-[8px] opacity-80 uppercase">${res.nombre}</p>
-                        <div class="mt-3 bg-white/20 p-3 rounded-xl text-center border border-white/10">
-                            <span class="block text-xl font-black">${res.historial.length}</span>
-                            <span class="text-[7px] uppercase font-bold text-red-100">Reportes registrados</span>
+        zona.innerHTML = `
+            <div class="animar-reporte">
+                <div class="bg-red-600 p-5 rounded-[2rem] text-white mb-4 shadow-lg">
+                    <h3 class="text-[11px] font-black uppercase">Reporte de Incidencias</h3>
+                    <p class="text-[8px] opacity-80 uppercase">${res.nombre}</p>
+                    <div class="mt-3 bg-white/20 p-3 rounded-xl text-center border border-white/10">
+                        <span class="block text-xl font-black">${res.historial.length}</span>
+                        <span class="text-[7px] uppercase font-bold text-red-100">Reportes registrados</span>
+                    </div>
+                </div>
+
+                <div class="max-h-[300px] overflow-y-auto px-1 custom-scroll">
+                    ${htmlIncidencias || `
+                        <div class="text-center py-10 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                            <p class="text-gray-400 text-[9px] font-bold uppercase italic">El alumno no cuenta con incidencias registradas</p>
                         </div>
-                    </div>
-
-                    <div class="max-h-[300px] overflow-y-auto px-1 custom-scroll">
-                        ${htmlIncidencias || `
-                            <div class="text-center py-10 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                                <p class="text-gray-400 text-[9px] font-bold uppercase italic">El alumno no cuenta con incidencias registradas</p>
-                            </div>
-                        `}
-                    </div>
-
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
-</button>
+                    `}
                 </div>
-            `;
-        })
-        .obtenerIncidenciasAlumno(userData.usuario);
+
+                <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
+                    <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
+                </button>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = `<p class="text-center p-10 text-red-500 font-bold text-[10px] uppercase">Error de conexión con el servidor</p>
+                          <button onclick="renderMenu()" class="w-full p-2 bg-gray-200 rounded-xl uppercase text-[9px] font-black">Volver</button>`;
+    }
 }
-function verNotificacionesHijo() {
+        
+async function verNotificacionesHijo() {
     var zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+
     zona.innerHTML = '<p class="text-center p-10 text-[10px] font-black uppercase text-gray-400 animate-pulse">Cargando mensajes...</p>';
     
-    // Llamada al servidor
-    google.script.run
-        .withSuccessHandler(function(res) {
-            if (res.error) {
-                zona.innerHTML = '<p class="text-center p-10 text-red-500 text-[9px] font-bold uppercase">' + res.error + '</p>';
-                return;
-            }
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerNotificacionesHijo', 
+                usuario: userData.usuario 
+            })
+        });
 
-            // Si no hay mensajes
-            if (!res.lista || res.lista.length === 0) {
-                zona.innerHTML = '<div class="text-center p-10"><p class="text-[9px] font-black text-gray-400 uppercase">No tienes notificaciones nuevas</p><button onclick="renderMenu()" class="mt-4 bg-gray-800 text-white px-4 py-2 rounded-xl text-[9px]">VOLVER</button></div>';
-                return;
-            }
+        const res = await response.json();
 
-            // Construir la lista de mensajes
-            var tarjetas = res.lista.map(function(n) {
-                return '<div class="bg-white p-4 mb-3 rounded-2xl border border-indigo-50 shadow-sm">' +
-                       '<p class="text-[8px] font-black text-indigo-400 mb-1 uppercase">' + n.fecha + '</p>' +
-                       '<p class="text-[10px] font-bold text-gray-700 leading-tight">' + n.mensaje + '</p>' +
-                       '</div>';
-            }).join('');
+        if (res.error) {
+            zona.innerHTML = '<p class="text-center p-10 text-red-500 text-[9px] font-bold uppercase">' + res.error + '</p>';
+            return;
+        }
 
-zona.innerHTML = `
-    <div class="animar-reporte">
-        <div class="bg-indigo-600 p-5 rounded-[2rem] text-white mb-4 shadow-lg text-center">
-            <h3 class="text-[11px] font-black uppercase tracking-widest">Notificaciones</h3>
-        </div>
+        // Si no hay mensajes
+        if (!res.lista || res.lista.length === 0) {
+            zona.innerHTML = '<div class="text-center p-10"><p class="text-[9px] font-black text-gray-400 uppercase">No tienes notificaciones nuevas</p><button onclick="renderMenu()" class="mt-4 bg-gray-800 text-white px-4 py-2 rounded-xl text-[9px]">VOLVER</button></div>';
+            return;
+        }
 
-        <div class="max-h-[300px] overflow-y-auto px-1 custom-scroll">
-            ${tarjetas}
-        </div>
+        // Construir la lista de mensajes
+        var tarjetas = res.lista.map(function(n) {
+            return '<div class="bg-white p-4 mb-3 rounded-2xl border border-indigo-50 shadow-sm">' +
+                   '<p class="text-[8px] font-black text-indigo-400 mb-1 uppercase">' + n.fecha + '</p>' +
+                   '<p class="text-[10px] font-bold text-gray-700 leading-tight">' + n.mensaje + '</p>' +
+                   '</div>';
+        }).join('');
 
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
-    </div>
-`;
-        })
-        .obtenerNotificacionesHijo(userData.usuario); // <-- Verifica que userData.usuario tenga la matrícula
+        zona.innerHTML = `
+            <div class="animar-reporte">
+                <div class="bg-indigo-600 p-5 rounded-[2rem] text-white mb-4 shadow-lg text-center">
+                    <h3 class="text-[11px] font-black uppercase tracking-widest">Notificaciones</h3>
+                </div>
+
+                <div class="max-h-[300px] overflow-y-auto px-1 custom-scroll">
+                    ${tarjetas}
+                </div>
+
+                <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
+                    <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
+                </button>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = '<p class="text-center p-10 text-red-500 text-[9px] font-bold uppercase">Error de conexión con el servidor</p>';
+    }
 }
-function actualizarBurbujasPadre() {
+        
+async function actualizarBurbujasPadre() {
     if (!userData || !userData.usuario) return;
+    
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
-    google.script.run.withSuccessHandler(function(res) {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerIncidenciasAlumno', 
+                usuario: userData.usuario 
+            })
+        });
+
+        const res = await response.json();
+
         const bInci = document.getElementById('burbuja-inci');
         if (bInci && res.success && res.historial && res.historial.length > 0) {
             bInci.innerText = res.historial.length;
             bInci.classList.remove('hidden');
         }
-    }).obtenerIncidenciasAlumno(userData.usuario);
+    } catch (error) {
+        console.error("Error al actualizar burbujas:", error);
+    }
 }
+
 // Variable global para guardar los datos y filtrar sin volver al servidor
 let datosAsistenciaGlobal = [];
 
-function verUltimaAsistencia() {
+async function verUltimaAsistencia() {
     const zona = document.getElementById('zona-interaccion');
-    zona.innerHTML = `<div class="text-center p-12"><div class="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full inline-block mb-4"></div><p class="text-[9px] font-black text-gray-400 uppercase">Consultando Datos...</p></div>`;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+    
+    zona.innerHTML = `<div class="text-center p-12">
+        <div class="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full inline-block mb-4"></div>
+        <p class="text-[9px] font-black text-gray-400 uppercase">Consultando Datos...</p>
+    </div>`;
 
-    // Primero obtenemos el expediente (para nombre y totales)
-    google.script.run.withSuccessHandler(function(datosExpediente) {
-        
-        // Luego obtenemos el historial de fotos y movimientos
-        google.script.run.withSuccessHandler(function(resHistorial) {
-            if (!resHistorial.success) {
-                zona.innerHTML = `<div class="p-10 text-center uppercase text-[10px] font-bold text-gray-400">${resHistorial.error}</div>`;
-                return;
-            }
-            // Combinamos ambos resultados en un solo objeto para el render
-            const datosCompletos = {
-                ...datosExpediente,
-                lista: resHistorial.lista
-            };
-            renderizarVistaHistorial(datosCompletos);
-        }).obtenerHistorialAsistencias(userData.usuario);
+    try {
+        // Ejecutamos ambas consultas casi al mismo tiempo para mayor velocidad
+        const [respExpediente, respHistorial] = await Promise.all([
+            fetch(urlScript, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ accion: 'obtenerExpedientePadre', matricula: userData.usuario })
+            }),
+            fetch(urlScript, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ accion: 'obtenerHistorialAsistencias', usuario: userData.usuario })
+            })
+        ]);
 
-    }).obtenerExpedientePadre(userData.usuario);
+        const datosExpediente = await respExpediente.json();
+        const resHistorial = await respHistorial.json();
+
+        if (!resHistorial.success) {
+            zona.innerHTML = `<div class="p-10 text-center uppercase text-[10px] font-bold text-gray-400">${resHistorial.error}</div>`;
+            return;
+        }
+
+        // Combinamos ambos resultados en un solo objeto para el render
+        const datosCompletos = {
+            ...datosExpediente,
+            lista: resHistorial.lista
+        };
+
+        // Llamamos a la función de renderizado que ya tienes en tu código
+        renderizarVistaHistorial(datosCompletos);
+
+    } catch (error) {
+        console.error("Error en verUltimaAsistencia:", error);
+        zona.innerHTML = `<div class="p-10 text-center uppercase text-[10px] font-bold text-red-400">Error de conexión con el servidor</div>
+                          <button onclick="renderMenu()" class="mt-4 bg-gray-100 px-6 py-2 rounded-xl text-[9px] font-black uppercase">Volver</button>`;
+    }
 }
 
 function renderizarVistaHistorial(datos) {
@@ -1340,11 +1450,12 @@ function volverAlLogin() {
 }
 
 // 4. EJECUCIÓN DE REGISTRO (CON NOTIFICACIÓN ESTÉTICA)
-function ejecutarRegistro() {
+async function ejecutarRegistro() {
     const mat = document.getElementById('reg-mat').value;
     const mail = document.getElementById('reg-mail').value;
     const p1 = document.getElementById('reg-pass1').value;
     const p2 = document.getElementById('reg-pass2').value;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
     if (!mat || !mail || !p1 || !p2) {
         Swal.fire({ 
@@ -1372,8 +1483,21 @@ function ejecutarRegistro() {
         didOpen: () => { Swal.showLoading() } 
     });
 
-    google.script.run.withSuccessHandler(res => {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'registrarPapaPorPrimeraVez', 
+                mat: mat, 
+                mail: mail, 
+                pass: p1 
+            })
+        });
+
+        const res = await response.json();
         Swal.close();
+
         if (res.success) {
             Swal.fire({
                 icon: 'success',
@@ -1382,7 +1506,7 @@ function ejecutarRegistro() {
                 confirmButtonColor: '#15803d',
                 confirmButtonText: 'ENTRAR AHORA'
             }).then(() => {
-                volverAlLogin(); // Llama a la redirección al cerrar el mensaje
+                volverAlLogin(); 
             });
         } else {
             Swal.fire({ 
@@ -1392,7 +1516,16 @@ function ejecutarRegistro() {
                 confirmButtonColor: '#15803d' 
             });
         }
-    }).registrarPapaPorPrimeraVez(mat, mail, p1);
+    } catch (error) {
+        Swal.close();
+        console.error("Error en registro:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo contactar con el servidor. Intenta más tarde.',
+            confirmButtonColor: '#15803d'
+        });
+    }
 }
 // PASO 1: Solicitar Código
 function mostrarRecuperacion() {
@@ -1438,49 +1571,132 @@ function mostrarPantallaNuevaClave(matricula) {
     `;
 }
 // Función para pedir el código al servidor
-function ejecutarSolicitudCodigo() {
+async function ejecutarSolicitudCodigo() {
     const mat = document.getElementById('rec-mat').value;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+
     if (!mat) {
-        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa la matrícula.', confirmButtonColor: '#15803d' });
+        Swal.fire({ 
+            icon: 'warning', 
+            title: 'Atención', 
+            text: 'Ingresa la matrícula.', 
+            confirmButtonColor: '#15803d' 
+        });
         return;
     }
 
-    Swal.fire({ title: 'Buscando cuenta...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+    Swal.fire({ 
+        title: 'Buscando cuenta...', 
+        allowOutsideClick: false, 
+        didOpen: () => { Swal.showLoading() } 
+    });
 
-    google.script.run.withSuccessHandler(res => {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'enviarCodigoRecuperacion', 
+                mat: mat 
+            })
+        });
+
+        const res = await response.json();
         Swal.close();
+
         if (res.success) {
-            Swal.fire({ icon: 'success', title: 'Código Enviado', text: res.mensaje, confirmButtonColor: '#15803d' }).then(() => {
-                mostrarPantallaNuevaClave(mat); // Pasamos al paso 2
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'Código Enviado', 
+                text: res.mensaje, 
+                confirmButtonColor: '#15803d' 
+            }).then(() => {
+                // Esta función debe existir en tu código para mostrar el campo del código y la nueva clave
+                mostrarPantallaNuevaClave(mat); 
             });
         } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje, confirmButtonColor: '#15803d' });
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Error', 
+                text: res.mensaje, 
+                confirmButtonColor: '#15803d' 
+            });
         }
-    }).enviarCodigoRecuperacion(mat);
+    } catch (error) {
+        Swal.close();
+        console.error("Error al solicitar código:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de red',
+            text: 'No se pudo conectar con el servidor.',
+            confirmButtonColor: '#15803d'
+        });
+    }
 }
 
 // Función para cambiar la clave finalmente
-function ejecutarCambioClave(matricula) {
+async function ejecutarCambioClave(matricula) {
     const token = document.getElementById('rec-token').value;
     const pass = document.getElementById('new-pass').value;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
     if (!token || !pass) {
-        Swal.fire({ icon: 'warning', text: 'Completa todos los campos.', confirmButtonColor: '#15803d' });
+        Swal.fire({ 
+            icon: 'warning', 
+            text: 'Completa todos los campos.', 
+            confirmButtonColor: '#15803d' 
+        });
         return;
     }
 
-    Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+    Swal.fire({ 
+        title: 'Verificando...', 
+        allowOutsideClick: false, 
+        didOpen: () => { Swal.showLoading() } 
+    });
 
-    google.script.run.withSuccessHandler(res => {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'verificarYCambiarPass', 
+                matricula: matricula,
+                token: token,
+                pass: pass
+            })
+        });
+
+        const res = await response.json();
         Swal.close();
+
         if (res.success) {
-            Swal.fire({ icon: 'success', title: '¡Listo!', text: 'Tu contraseña ha sido actualizada.', confirmButtonColor: '#15803d' }).then(() => {
-                volverAlLogin(); // Usamos tu función 2 que ya funciona
+            Swal.fire({ 
+                icon: 'success', 
+                title: '¡Listo!', 
+                text: 'Tu contraseña ha sido actualizada.', 
+                confirmButtonColor: '#15803d' 
+            }).then(() => {
+                volverAlLogin(); 
             });
         } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje, confirmButtonColor: '#15803d' });
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Error', 
+                text: res.mensaje, 
+                confirmButtonColor: '#15803d' 
+            });
         }
-    }).verificarYCambiarPass(matricula, token, pass);
+    } catch (error) {
+        Swal.close();
+        console.error("Error al cambiar clave:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo completar la operación.',
+            confirmButtonColor: '#15803d'
+        });
+    }
 }
     </script>
 </body>
