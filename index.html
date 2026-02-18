@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -151,7 +149,7 @@ function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
-    const urlScript = "https://script.google.com/macros/s/AKfycbzYlYiHqvmm7ZcHcOTZKxJd8umuaJaHZezRurCKswUebVe--RhUJ9vvNsQIFGsBMNGI5A/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbzGZzUM1325eTxrYA2aYaa5QlPe4hP9c9IB_mTrG0Mqy9RIGqfxXbGuuUdKBYUKpJ-h/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -161,39 +159,35 @@ function validar() {
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    const nombreCallback = 'jsonp_' + Date.now(); // Nombre único basado en el tiempo
+    // Escuchamos la respuesta que vendrá del Iframe
+    const manejarRespuesta = function(event) {
+        // Solo aceptamos mensajes que vengan de Google
+        if (!event.origin.includes('google.com')) return;
+        
+        const res = JSON.parse(event.data);
+        console.log("Datos recibidos:", res);
 
-    window[nombreCallback] = function(res) {
-        console.log("¡Éxito! Datos recibidos:", res);
         if(res && res.success) {
             userData = res;
             renderMenu();
         } else {
-            mostrarError("Usuario o contraseña incorrectos");
+            mostrarError("Credenciales incorrectas");
             btn.innerText = "ENTRAR";
             btn.disabled = false;
         }
-        delete window[nombreCallback];
-        const oldScript = document.getElementById(nombreCallback);
-        if(oldScript) oldScript.remove();
+        // Limpieza
+        window.removeEventListener('message', manejarRespuesta);
+        document.body.removeChild(iframe);
     };
 
-    const script = document.createElement('script');
-    script.id = nombreCallback;
-    // Agregamos &nocache= para obligar a GitHub a pedir una versión limpia
-    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${nombreCallback}&v=${Date.now()}`;
-    
-    script.onerror = function() {
-        // Si entra aquí, el navegador bloqueó la salida del paquete
-        console.error("El navegador bloqueó la petición al script de Google.");
-        mostrarError("Error de bloqueo en navegador (CORS/CSP)");
-        btn.disabled = false;
-        btn.innerText = "ENTRAR";
-    };
+    window.addEventListener('message', manejarRespuesta);
 
-    document.head.appendChild(script);
+    // Creamos un iframe invisible para hacer la petición
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&modo=iframe`;
+    document.body.appendChild(iframe);
 }
-
         function cerrarSesion() {
             userData = null;
             const zona = document.getElementById('zona-interaccion');
