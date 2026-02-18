@@ -561,15 +561,19 @@ function abrirFormularioIncidencias() {
     }).obtenerListasIncidencias();
 }
 
-function enviarIncidencia() {
+async function enviarIncidencia() {
     const btn = document.getElementById('btn-save');
     const msg = document.getElementById('status-msg');
     const nombre = document.getElementById('inc-nombre');
     const otro = document.getElementById('inc-otro');
+    
+    // Usamos la misma URL que usamos en el login
+    const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec"; 
 
     if(!nombre.value) return alert("Selecciona un alumno");
 
     const datos = {
+        accion: 'guardarIncidencia', // Le decimos a Google qué queremos hacer
         nombre: nombre.value,
         incidencia: document.getElementById('inc-tipo').value,
         reporta: document.getElementById('inc-reporta').value,
@@ -582,26 +586,39 @@ function enviarIncidencia() {
     btn.disabled = true;
     btn.classList.add('opacity-50');
 
-    google.script.run.withSuccessHandler(function() {
-        // 1. Mostramos el mensaje discreto
-        msg.classList.remove('hidden');
-        
-        // 2. Restauramos el botón
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(datos)
+        });
+
+        const res = await response.json();
+
+        if (res.success) {
+            // ÉXITO: Mostramos el mensaje discreto
+            msg.classList.remove('hidden');
+            
+            // Limpiamos campos
+            nombre.value = "";
+            otro.value = "";
+            nombre.focus();
+
+            setTimeout(() => {
+                msg.classList.add('hidden');
+            }, 3000);
+        } else {
+            alert("Error al guardar: " + (res.error || "Desconocido"));
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error de conexión con el servidor");
+    } finally {
+        // Restauramos el botón pase lo que pase
         btn.innerText = "GUARDAR REGISTRO";
         btn.disabled = false;
         btn.classList.remove('opacity-50');
-
-        // 3. Limpiamos campos clave para seguir capturando
-        nombre.value = "";
-        otro.value = "";
-        nombre.focus();
-
-        // 4. Desvanecemos el mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-            msg.classList.add('hidden');
-        }, 3000);
-
-    }).guardarIncidenciaEnSheet(datos);
+    }
 }
 
 function abrirVisualizadorReportes() {
