@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com;">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -149,9 +150,7 @@ function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
-    
-    // URL limpia de tu script (Asegúrate de que sea la de /exec)
-    const urlScript = "https://script.google.com/macros/s/AKfycbyi2nyw6ErBmxYc6o9LCcrh1qyBGxvzNq7pS2DwNxqR-BUQD6zTw15IkJkN3ePvbja1Jg/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbzYlYiHqvmm7ZcHcOTZKxJd8umuaJaHZezRurCKswUebVe--RhUJ9vvNsQIFGsBMNGI5A/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -161,36 +160,38 @@ function validar() {
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    // 1. Creamos un nombre de función único para la respuesta
-    const nombreCallback = 'jsonp_callback_' + Math.round(100000 * Math.random());
+    const nombreCallback = 'jsonp_' + Date.now(); // Nombre único basado en el tiempo
 
-    // 2. Definimos qué hacer cuando Google nos responda
-window[nombreCallback] = function(res) {
-        // Esta alerta nos dirá si Google respondió
-        alert("Respuesta recibida: " + JSON.stringify(res)); 
-        
+    window[nombreCallback] = function(res) {
+        console.log("¡Éxito! Datos recibidos:", res);
         if(res && res.success) {
             userData = res;
-            const loginForm = document.getElementById('login-form');
-            if(loginForm) {
-                loginForm.innerHTML = ""; 
-            } else {
-                console.error("No encontré el ID 'login-form'");
-            }
-            
-            if (typeof renderMenu === "function") {
-                renderMenu();
-            } else {
-                alert("Error: La función renderMenu() no existe en tu index");
-            }
+            renderMenu();
         } else {
             mostrarError("Usuario o contraseña incorrectos");
             btn.innerText = "ENTRAR";
             btn.disabled = false;
         }
-        document.body.removeChild(script);
         delete window[nombreCallback];
+        const oldScript = document.getElementById(nombreCallback);
+        if(oldScript) oldScript.remove();
     };
+
+    const script = document.createElement('script');
+    script.id = nombreCallback;
+    // Agregamos &nocache= para obligar a GitHub a pedir una versión limpia
+    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${nombreCallback}&v=${Date.now()}`;
+    
+    script.onerror = function() {
+        // Si entra aquí, el navegador bloqueó la salida del paquete
+        console.error("El navegador bloqueó la petición al script de Google.");
+        mostrarError("Error de bloqueo en navegador (CORS/CSP)");
+        btn.disabled = false;
+        btn.innerText = "ENTRAR";
+    };
+
+    document.head.appendChild(script);
+}
 
         function cerrarSesion() {
             userData = null;
