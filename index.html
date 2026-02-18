@@ -75,29 +75,9 @@ function validar() {
     btn.disabled = true;
     btn.innerHTML = "<div class='w-full text-center font-black animate-pulse'>CARGANDO...</div>";
 
-    // CREAMOS UN FORMULARIO EN EL AIRE Y LO ENVIAMOS
-    // Esto evita el error de CORS al 100%
-    const form = document.createElement('form');
-    form.method = 'GET';
-    form.action = urlScript;
-
-    const inputAccion = document.createElement('input');
-    inputAccion.name = 'accion';
-    inputAccion.value = 'login';
-    form.appendChild(inputAccion);
-
-    const inputUser = document.createElement('input');
-    inputUser.name = 'usuario';
-    inputUser.value = user;
-    form.appendChild(inputUser);
-
-    const inputPass = document.createElement('input');
-    inputPass.name = 'pass';
-    inputPass.value = pass;
-    form.appendChild(inputPass);
-
-    document.body.appendChild(form);
-    form.submit(); // ¡BUM! Adiós error de CORS
+    // REDIRECCIÓN DIRECTA CON DATOS
+    // Esto hace que Google reciba el usuario y contraseña de un solo golpe
+    window.location.href = `${urlScript}?usuario=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`;
 }
     </script>
 </body>
