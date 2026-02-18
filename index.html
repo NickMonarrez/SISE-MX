@@ -621,14 +621,26 @@ async function enviarIncidencia() {
     }
 }
 
-function abrirVisualizadorReportes() {
+async function abrirVisualizadorReportes() {
     const zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec"; // La misma que usaste en login
+
     zona.innerHTML = `<p class="text-center p-10 animate-pulse text-[10px] font-black uppercase text-gray-400">Cargando alumnos y reportes...</p>`;
 
-    google.script.run.withSuccessHandler(function(data) {
+    try {
+        // Pedimos los datos a Google mediante un POST
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'consultarReportes' })
+        });
+
+        const data = await response.json();
+
+        // Guardamos los registros en el objeto global para que filtrarPorNombre() funcione
         window.todosLosRegistros = data.historial;
         
-        // Datalist con la lista completa de la Hoja "Base de datos"
+        // Creamos la lista de opciones para el buscador
         let opcionesDatalist = data.listaCompleta.map(n => `<option value="${n}">`).join('');
 
         zona.innerHTML = `
@@ -657,13 +669,17 @@ function abrirVisualizadorReportes() {
                     </div>
                 </div>
 
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
+                <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
+                    <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
+                </button>
             </div>
         `;
-    }).consultarReportes();
+    } catch (error) {
+        console.error("Error al obtener reportes:", error);
+        zona.innerHTML = `<p class="text-center p-10 text-red-500 font-bold text-[10px]">Error al cargar datos. Intenta de nuevo.</p>
+                          <button onclick="renderMenu()" class="w-full p-2 bg-gray-200 rounded-xl uppercase text-[9px] font-black">Volver</button>`;
+    }
 }
 
 // ESTA ES LA FUNCIÓN QUE TE DABA ERROR (Ya está aquí incluida)
