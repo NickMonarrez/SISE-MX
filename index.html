@@ -149,10 +149,12 @@ async function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
-    const urlScript = "https://script.google.com/macros/s/AKfycbxHr3RA0_OsAyKj_GcfzrrXCQcHkngZrNDEL0IkrAh6zEgQuw_a1Y2pfCymAfPetaX_uw/exec"; // Asegúrate que sea la nueva /exec
+    
+    // Pon aquí tu URL de la NUEVA VERSIÓN
+    const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec"; 
 
     if(!u || !p) {
-        Swal.fire('Atención', 'Campos vacíos', 'warning');
+        Swal.fire('Atención', 'Completa todos los campos', 'warning');
         return;
     }
 
@@ -160,29 +162,32 @@ async function validar() {
     btn.disabled = true;
 
     try {
+        // El truco anti-CORS: usar text/plain en lugar de application/json
         const response = await fetch(urlScript, {
             method: 'POST',
-            mode: 'no-cors', // Permite enviar datos a otro dominio sin dramas
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8', 
+            },
             body: JSON.stringify({ accion: 'login', usuario: u, pass: p })
         });
 
-        // Como usamos 'no-cors', no podemos leer la respuesta directamente por seguridad del navegador.
-        // TRUCO: Si el servidor respondió (aunque no leamos el contenido), asumimos éxito parcial 
-        // o reintentamos con un método de lectura si el servidor está configurado.
-        
-        // Pero para que sea funcional 100% ahora mismo, usa esta versión simplificada:
-        const res = await fetch(`${urlScript}?accion=login&usuario=${u}&pass=${p}`).then(r => r.json());
-        
-        if(res.success) {
+        // Leemos la respuesta de Google
+        const res = await response.json();
+
+        if(res && res.success) {
             userData = res;
+            const zona = document.getElementById('pantalla-dinamica');
+            if(zona) zona.innerHTML = ""; 
             renderMenu();
         } else {
-            throw new Error();
+            Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
+            btn.innerText = "ENTRAR";
+            btn.disabled = false;
         }
 
     } catch (error) {
-        Swal.fire('Error', 'Credenciales incorrectas o error de red', 'error');
+        console.error("Detalle del error:", error);
+        Swal.fire('Error de Conexión', 'Hubo un problema al conectar con el servidor', 'error');
         btn.innerText = "ENTRAR";
         btn.disabled = false;
     }
