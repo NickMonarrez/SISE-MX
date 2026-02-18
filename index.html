@@ -1,27 +1,113 @@
-function validar() {
-    const user = document.getElementById('user').value;
-    const pass = document.getElementById('pass').value;
-    // ASEGÚRATE DE QUE ESTA URL TERMINE EN /exec
-    const urlScript = "https://script.google.com/macros/s/AKfycbyuDk9I7rhobSEGdcW_6bBbb6yrWjTEVcUZxsVZu5aZjZHy9CjDh_hs_l4YZdSLOXy_IA/exec";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISE MX - Login</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        html, body { height: 100%; margin: 0; background-color: #f3f4f6; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        .glass { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05); }
+        input, button { min-height: 55px; }
+        .btn-hover:active { transform: scale(0.96); transition: 0.2s; }
+    </style>
+</head>
 
-    // Usamos 'no-cors' no es ideal, mejor dejarlo que gestione el redireccionamiento
-    fetch(`${urlScript}?accion=login&usuario=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, {
-        method: 'GET'
-    })
-    .then(res => {
-        // Google a veces redirige, esto ayuda a manejar la respuesta
-        return res.json();
-      })
-    .then(data => {
-        if(data.success) {
-            alert("¡Bienvenido al sistema!");
-            // Aquí puedes redirigir a otra página si quieres
-        } else {
-            alert("Usuario o contraseña incorrectos");
+<body>
+    <div class="glass w-full max-w-[420px] flex flex-col justify-between p-6 sm:p-10 rounded-[2.5rem] transition-all duration-500">
+        
+        <div id="pantalla-dinamica">
+            <div class="text-center">
+                <h1 class="text-5xl sm:text-6xl font-black text-[#8b8a5d] mb-1 tracking-tighter">
+                    SISE<span class="text-slate-300 font-light">MX</span>
+                </h1>
+                <p class="text-slate-400 text-[10px] sm:text-[11px] mb-6 sm:mb-8 italic uppercase tracking-[0.2em] font-bold">
+                    Sistema de Identificación Segura Escolar
+                </p>
+                <h2 class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Acceso al Sistema</h2>
+                <div class="h-1 w-20 bg-[#8b8a5d] mx-auto mt-3 rounded-full"></div>
+            </div>
+
+            <div class="mt-8 sm:mt-10 space-y-4 sm:space-y-6">
+                <input type="text" id="user" placeholder="USUARIO (MATRICULA)" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-[#8b8a5d] outline-none text-sm font-bold shadow-sm transition-all uppercase">
+                
+                <div class="relative">
+                    <input type="password" id="pass" placeholder="CONTRASEÑA" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-[#8b8a5d] outline-none text-sm font-bold shadow-sm transition-all">
+                </div>
+
+                <button id="btn-login" onclick="validar()" class="btn-hover w-full flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-[#888c65] to-[#a3a87e] rounded-[2.5rem] shadow-xl text-white border-none cursor-pointer">
+                    <div class="flex items-center gap-3 sm:gap-4 ml-2">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-[12px] sm:text-sm font-black uppercase">Entrar al Sistema</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/50 mr-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <p class="mt-10 text-[9px] text-slate-300 text-center uppercase font-bold italic">
+            SISE MX™ · © 2026
+        </p>
+    </div>
+
+    <script>
+        async function validar() {
+            const user = document.getElementById('user').value.trim();
+            const pass = document.getElementById('pass').value.trim();
+            const btn = document.getElementById('btn-login');
+
+            // 1. TU URL DE GOOGLE APPS SCRIPT (Web App URL)
+            const urlScript = "https://script.google.com/macros/s/AKfycbwH1NfF0aP2fbn9vk0SmjRb2gdELEI89TnAXChpCTw9EQhTWeYcPXmoUxZfjJMzIQI7qQ/exec";
+
+            if (!user || !pass) {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa tus credenciales.', confirmButtonColor: '#8b8a5d' });
+                return;
+            }
+
+            // Bloquear botón mientras carga
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "<div class='w-full text-center font-black animate-pulse'>VERIFICANDO...</div>";
+
+            try {
+                // 2. PETICIÓN A GOOGLE (Enviando usuario y contraseña)
+                const response = await fetch(`${urlScript}?accion=login&usuario=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // 3. ¡REDIRECCIÓN EXITOSA!
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: '¡Acceso Correcto!', 
+                        text: 'Cargando tu sesión...', 
+                        showConfirmButton: false, 
+                        timer: 1500 
+                    }).then(() => {
+                        // Aquí lo enviamos de regreso al Script para que vea la App completa
+                        // Le pasamos el usuario por URL por si necesitas mostrar su nombre
+                        window.location.href = urlScript + "?view=dashboard&user=" + user;
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Denegado', text: 'Matrícula o contraseña incorrectos.', confirmButtonColor: '#8b8a5d' });
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Error de Red', text: 'No se pudo contactar con la base de datos.' });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
         }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Error de conexión: Verifica que tu Script esté publicado como 'Nueva Versión'");
-    });
-}
+    </script>
+</body>
+</html>
