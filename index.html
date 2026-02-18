@@ -512,19 +512,37 @@ async function verAsistencias(fechaManual = null) {
             }
         }
         
-function abrirFormularioIncidencias() {
+async function abrirFormularioIncidencias() {
     const zona = document.getElementById('zona-interaccion');
-    zona.innerHTML = `<p class="text-center p-10 animate-pulse text-[10px] font-black uppercase">Obteniendo menús de Excel...</p>`;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
-    google.script.run.withSuccessHandler(function(listas) {
-        let datalistHtml = listas.nombres.map(n => `<option value="${n}">`).join('');
+    zona.innerHTML = `
+        <div class="text-center p-10">
+            <div class="animate-spin w-10 h-10 border-[4px] border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">Preparando Formulario...</p>
+        </div>`;
+
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'obtenerListasIncidencias' })
+        });
+        const res = await response.json();
+
+        // Extraemos las listas del objeto que manda Google
+        const listas = res.listas; 
+        const alumnos = res.alumnos;
+
+        // Generar HTML para los select
         let optInc = listas.incidencias.map(i => `<option value="${i}">${i}</option>`).join('');
         let optRep = listas.reporta.map(r => `<option value="${r}">${r}</option>`).join('');
         let optAti = listas.atiende.map(a => `<option value="${a}">${a}</option>`).join('');
         let optAten = listas.atenciones.map(ate => `<option value="${ate}">${ate}</option>`).join('');
+        let datalistHtml = alumnos.map(al => `<option value="${al}">`).join('');
 
         zona.innerHTML = `
-            <div class="p-4 max-w-md mx-auto bg-white rounded-3xl shadow-lg border border-gray-100">
+            <div class="p-4 max-w-md mx-auto bg-white rounded-3xl shadow-lg border border-gray-100 animar-reporte">
                 <h3 class="text-[11px] font-black text-red-700 uppercase mb-4 text-center tracking-widest">Captura de Incidencias</h3>
                 
                 <div id="status-msg" class="hidden mb-3 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-[10px] font-bold text-center animate-bounce">
@@ -539,11 +557,11 @@ function abrirFormularioIncidencias() {
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                           <label class="text-[9px] font-bold text-gray-400 uppercase ml-2 text-[8px]">Incidencia</label>
+                           <label class="text-[8px] font-bold text-gray-400 uppercase ml-2">Incidencia</label>
                            <select id="inc-tipo" class="w-full px-2 py-3 rounded-xl border border-gray-200 text-[10px]">${optInc}</select>
                         </div>
                         <div>
-                           <label class="text-[9px] font-bold text-gray-400 uppercase ml-2 text-[8px]">Reporta</label>
+                           <label class="text-[8px] font-bold text-gray-400 uppercase ml-2">Reporta</label>
                            <select id="inc-reporta" class="w-full px-2 py-3 rounded-xl border border-gray-200 text-[10px]">${optRep}</select>
                         </div>
                     </div>
@@ -556,25 +574,26 @@ function abrirFormularioIncidencias() {
                         <select id="inc-atencion" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px]">${optAten}</select>
                     </div>
                     <div>
-                        <label class="text-[9px] font-bold text-gray-400 uppercase ml-2 text-[8px]">Observaciones (Opcional)</label>
+                        <label class="text-[8px] font-bold text-gray-400 uppercase ml-2">Observaciones (Opcional)</label>
                         <input type="text" id="inc-otro" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px]" placeholder="...">
                     </div>
                     
-<button onclick="enviarIncidencia()" id="btn-save" class="w-full mt-2 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#e11d48] to-[#fb7185] rounded-full shadow-lg shadow-rose-500/20 active:scale-95 transition-all border-none cursor-pointer">
-    <div class="w-8 h-8 rounded-full bg-[#9f1239] flex items-center justify-center text-white text-xs shadow-inner">💾</div>
-    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Guardar Registro</span>
-</button>
+                    <button onclick="enviarIncidencia()" id="btn-save" class="w-full mt-2 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#e11d48] to-[#fb7185] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
+                        <div class="w-8 h-8 rounded-full bg-[#9f1239] flex items-center justify-center text-white text-xs shadow-inner">💾</div>
+                        <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Guardar Registro</span>
+                    </button>
                     
                     <hr class="my-2 border-gray-100">
 
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
+                    <button onclick="renderMenu()" class="w-full mt-2 flex items-center justify-center gap-3 py-4 bg-gray-100 rounded-full active:scale-95 transition-all">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em]">Cancelar</span>
+                    </button>
                 </div>
-            </div>
-        `;
-    }).obtenerListasIncidencias();
+            </div>`;
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = `<p class="text-center p-10 text-red-500 font-black text-[10px]">ERROR AL CARGAR LISTAS</p>`;
+    }
 }
 
 async function enviarIncidencia() {
