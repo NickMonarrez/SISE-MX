@@ -133,7 +133,7 @@
                 icono.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />';
             }
         }
-
+        
         function mostrarError(msg) {
             const errDiv = document.getElementById('mensaje-error');
             if (errDiv) {
@@ -150,7 +150,7 @@ async function validar() {
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
     
-    // Pon aquí tu URL de la NUEVA VERSIÓN
+    // URL de tu Script de Google
     const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec"; 
 
     if(!u || !p) {
@@ -162,7 +162,7 @@ async function validar() {
     btn.disabled = true;
 
     try {
-        // El truco anti-CORS: usar text/plain en lugar de application/json
+        // Usamos POST con text/plain para saltar el bloqueo de CORS
         const response = await fetch(urlScript, {
             method: 'POST',
             headers: {
@@ -171,13 +171,14 @@ async function validar() {
             body: JSON.stringify({ accion: 'login', usuario: u, pass: p })
         });
 
-        // Leemos la respuesta de Google
+        // Recibimos la respuesta de Google
         const res = await response.json();
 
         if(res && res.success) {
+            // Guardamos los datos globalmente
             userData = res;
-            const zona = document.getElementById('pantalla-dinamica');
-            if(zona) zona.innerHTML = ""; 
+            
+            // NO borramos la pantalla aquí para evitar errores de "null" en renderMenu
             renderMenu();
         } else {
             Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
@@ -187,7 +188,9 @@ async function validar() {
 
     } catch (error) {
         console.error("Detalle del error:", error);
-        Swal.fire('Error de Conexión', 'Hubo un problema al conectar con el servidor', 'error');
+        // Si sale este error pero la consola muestra que los datos llegaron, 
+        // el problema está dentro de la lógica de renderMenu()
+        Swal.fire('Error de Conexión', 'Hubo un problema al procesar los datos', 'error');
         btn.innerText = "ENTRAR";
         btn.disabled = false;
     }
@@ -208,71 +211,85 @@ async function validar() {
         }
 
                 // AQUI CAMBIAS EL NOMBRE DEL PLANTEL
-        function renderMenu() {
-            document.getElementById('titulo-seccion').innerText = "PLANTEL CONALEP NAVOLATO";
-            document.getElementById('barra').classList.replace('w-16', 'w-full');
-           
-            let html = `
-                <p class="text-center text-[10px] text-green-700 mb-6 italic uppercase font-black tracking-widest bg-green-50 py-1 rounded-full">${userData.rol}</p>
-                <div class="grid grid-cols-1 gap-3">
-            `;
+function renderMenu() {
+    // 1. Verificamos que los elementos existan antes de asignarles texto
+    const titulo = document.getElementById('titulo-seccion');
+    const barra = document.getElementById('barra');
+    const zona = document.getElementById('zona-interaccion');
 
-            if(userData.rol === 'ADMIN_GENERAL' || userData.rol === 'PREFECTO') {
-                html += `
-<button onclick="abrirEscaner()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#b8c1cc] to-[#ced6e0] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
-    <div class="w-8 h-8 rounded-full bg-[#8c9bb0] flex items-center justify-center text-white text-xs shadow-inner">📸</div>
-    <span class="text-[10px] font-black text-[#1e293b] uppercase tracking-[0.25em]">Escáner Biométrico</span>
-</button>
+    if (titulo) titulo.innerText = "PLANTEL CONALEP NAVOLATO";
+    if (barra) {
+        barra.classList.remove('w-16');
+        barra.classList.add('w-full');
+    }
+
+    if (!zona) {
+        console.error("No se encontró el contenedor 'zona-interaccion'");
+        return;
+    }
+
+    let html = `
+        <p class="text-center text-[10px] text-green-700 mb-6 italic uppercase font-black tracking-widest bg-green-50 py-1 rounded-full">${userData.rol}</p>
+        <div class="grid grid-cols-1 gap-3">
+    `;
+
+    if (userData.rol === 'ADMIN_GENERAL' || userData.rol === 'PREFECTO') {
+        html += `
+            <button onclick="abrirEscaner()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#b8c1cc] to-[#ced6e0] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
+                <div class="w-8 h-8 rounded-full bg-[#8c9bb0] flex items-center justify-center text-white text-xs shadow-inner">📸</div>
+                <span class="text-[10px] font-black text-[#1e293b] uppercase tracking-[0.25em]">Escáner Biométrico</span>
             </button>
-<button onclick="irARegistrosBiometricos()" class="w-full mt-4 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#767a58] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
-    <div class="w-8 h-8 rounded-full bg-[#b8c1cc] flex items-center justify-center text-white text-xs shadow-inner">🧬</div>
-    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Registros Biométricos</span>
-</button>
-<button onclick="verAsistencias()" class="w-full mt-4 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#1e293b] to-[#334155] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
-    <div class="w-8 h-8 rounded-full bg-[#3b82f6] flex items-center justify-center text-white text-xs shadow-inner">📊</div>
-    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Control de Asistencias</span>
-</button>
-                    <div class="grid grid-cols-2 gap-3">
-                    
-<button onclick="abrirFormularioIncidencias()" class="bg-red-50 text-red-600 border border-red-100 p-4 rounded-[1.5rem] font-black text-[9px] uppercase tracking-tighter active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
-            <span class="text-lg">⚠️</span>
-            Generar Incidencias
-        </button>
 
-                    <button onclick="abrirVisualizadorReportes()" class="bg-amber-50 text-amber-600 border border-amber-100 p-4 rounded-[1.5rem] font-black text-[9px] uppercase tracking-tighter active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
-                     <span class="text-lg">🔍</span>
-                     Visualizar Reportes
+            <button onclick="irARegistrosBiometricos()" class="w-full mt-4 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#767a58] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
+                <div class="w-8 h-8 rounded-full bg-[#b8c1cc] flex items-center justify-center text-white text-xs shadow-inner">🧬</div>
+                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Registros Biométricos</span>
+            </button>
+
+            <button onclick="verAsistencias()" class="w-full mt-4 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#1e293b] to-[#334155] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
+                <div class="w-8 h-8 rounded-full bg-[#3b82f6] flex items-center justify-center text-white text-xs shadow-inner">📊</div>
+                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Control de Asistencias</span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <button onclick="abrirFormularioIncidencias()" class="bg-red-50 text-red-600 border border-red-100 p-4 rounded-[1.5rem] font-black text-[9px] uppercase tracking-tighter active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
+                    <span class="text-lg">⚠️</span>
+                    Generar Incidencias
+                </button>
+
+                <button onclick="abrirVisualizadorReportes()" class="bg-amber-50 text-amber-600 border border-amber-100 p-4 rounded-[1.5rem] font-black text-[9px] uppercase tracking-tighter active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1">
+                    <span class="text-lg">🔍</span>
+                    Visualizar Reportes
+                </button>
+            </div>
+        `;
+    } else if (userData.rol === 'PADRE O TUTOR') {
+        html += `
+            <div class="space-y-3">
+                <button onclick="alert('Redirigiendo...')" class="w-full bg-green-600 text-white p-4 rounded-3xl font-black shadow-md uppercase text-[10px] tracking-widest">📱 Registrar en la App</button>
+                <button onclick="verUltimaAsistencia()" class="w-full bg-green-600 text-white p-4 rounded-3xl font-black shadow-md uppercase text-[10px] tracking-widest">📅 Registro de Entradas/Salidas</button>
+                <button onclick="verAsistenciasHijo()" class="w-full bg-blue-600 text-white p-4 rounded-3xl font-black shadow-md uppercase text-[10px] tracking-widest">Ver Asistencias</button>
+                
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <button onclick="verNotificacionesHijo()" class="flex items-center justify-center gap-2 bg-indigo-600 text-white p-3 rounded-2xl shadow-sm active:scale-95 transition-all">
+                        <span class="text-sm">🔔</span>
+                        <span class="text-[10px] font-black uppercase tracking-tighter">Notificaciones</span>
                     </button>
-                    </div>
-                `;
-            } else if(userData.rol === 'PADRE O TUTOR') {
-                html += `
-                <div class="space-y-3">
-                    <button onclick="alert('Redirigiendo...')" class="w-full bg-green-600 text-white p-4 rounded-3xl font-black shadow-md uppercase text-[10px] tracking-widest">📱 Registrar en la App</button>
-                        <button onclick="verUltimaAsistencia()" class="w-full bg-green-600 text-white p-4 rounded-3xl font-black shadow-md uppercase text-[10px] tracking-widest">📅  Registro de Entradas/Salidas
-                        </button>
-                    <button onclick="verAsistenciasHijo()" class="w-full bg-blue-600 text-white p-4 rounded-3xl font-black shadow-md uppercase text-[10px] tracking-widest">Ver Asistencias</button>
-                    <div class="grid grid-cols-2 gap-3">
-<button onclick="verNotificacionesHijo()" class="flex items-center justify-center gap-2 bg-indigo-600 text-white p-3 rounded-2xl shadow-sm active:scale-95 transition-all">
-        <span class="text-sm">🔔</span>
-        <span class="text-[10px] font-black uppercase tracking-tighter">Notificaciones</span>
-    </button>
-
-    <button onclick="verIncidenciasHijo()" class="flex items-center justify-center gap-2 bg-red-600 text-white p-3 rounded-2xl shadow-sm active:scale-95 transition-all">
-        <span class="text-sm">⚠️</span>
-        <span class="text-[10px] font-black uppercase tracking-tighter">Incidencias</span>
-    </button>
-
-                    </div>
-                `;
-            }
-
-            html += `
-                <button onclick="cerrarSesion()" class="w-full mt-6 text-[10px] text-red-500 font-black uppercase underline tracking-tighter hover:text-red-700 transition-colors">Cerrar Sesión Segura</button>
+                    <button onclick="verIncidenciasHijo()" class="flex items-center justify-center gap-2 bg-red-600 text-white p-3 rounded-2xl shadow-sm active:scale-95 transition-all">
+                        <span class="text-sm">⚠️</span>
+                        <span class="text-[10px] font-black uppercase tracking-tighter">Incidencias</span>
+                    </button>
                 </div>
-            `;
-            document.getElementById('zona-interaccion').innerHTML = html;
-        }
+            </div>
+        `;
+    }
+
+    html += `
+            <button onclick="cerrarSesion()" class="w-full mt-6 text-[10px] text-red-500 font-black uppercase underline tracking-tighter hover:text-red-700 transition-colors">Cerrar Sesión Segura</button>
+        </div>
+    `;
+    
+    zona.innerHTML = html;
+}
 
 function abrirEscaner() {
     const zona = document.getElementById('zona-interaccion');
