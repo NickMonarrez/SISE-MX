@@ -3,7 +3,7 @@
 <head>
     <base target="_top">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -12,31 +12,23 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
         
-        /* 1. FONDO SUTIL DE LA HOJA (PÁGINA) */
-        html, body {
-            height: 100%;
-            margin: 0;
-            background-color: #f3f4f6; /* Gris muy suave para que el blanco resalte */
-            overflow-x: hidden;
-        }
-
         body { 
             font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            margin: 0;
             display: flex;
-            align-items: center; /* Centra la hoja verticalmente */
-            justify-content: center; /* Centra la hoja horizontalmente */
-            padding: 15px; /* Espacio mínimo para que no pegue a los bordes del cel */
+            align-items: center;    
+            justify-content: center; 
+            min-height: 100vh;      
+            width: 100%;
+            /* ESTO ARREGLA EL SCROLL EN HORIZONTAL */
+            overflow-y: auto; 
+            padding: 10px 0;
         }
         
-        /* 2. CONTENEDOR CON RESALTE SUTIL (Bordes y Sombra) */
         .glass { 
             background: #ffffff; 
-            border: 1px solid rgba(0,0,0,0.08); /* Borde sutil casi imperceptible */
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05); /* Sombra elegante */
-        }
-
-        input, button {
-            min-height: 55px;
+            border: 1px solid #e2e8f0; 
         }
 
         .shine-effect {
@@ -47,176 +39,84 @@
         .shine-effect::after {
             content: "";
             position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
             transition: 0.8s;
         }
-                .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #15803d; border-radius: 10px; }
-        .btn-hover { transition: all 0.2s; }
-        .btn-hover:active { transform: scale(0.96); }
-        /* Animación de entrada hacia arriba */
-.animar-reporte {
-    animation: slideUp 0.4s ease-out forwards;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* 1. CONFIGURACIÓN DE SCROLL Y CONTENEDOR (Celular y PC) */
-.contenedor-scroll-v {
-    max-height: 55vh;           /* Altura dinámica para celulares */
-    overflow-y: auto;           /* Solo scroll vertical */
-    overflow-x: hidden;
-    padding-right: 5px;
-    -webkit-overflow-scrolling: touch; /* Suavidad en iPhone */
-    touch-action: pan-y;               /* Evita bloqueos táctiles */
-    overscroll-behavior-y: contain;    /* No mueve la página de fondo */
-    margin-bottom: 10px;
-}
-
-/* 1. CONTROL DE SCROLL Y CONTENEDOR */
-.contenedor-scroll-v {
-    max-height: 50vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-right: 4px;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior-y: contain;
-}
-
-/* Scrollbar minimalista para PC */
-.contenedor-scroll-v::-webkit-scrollbar {
-    width: 4px;
-}
-.contenedor-scroll-v::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
-}
-
-/* 2. CORRECCIÓN DEL CALENDARIO (Para que no invada los lados) */
-/* Eliminamos el código que hacía que todo el cuadro fuera clickeable */
-input[type="date"] {
-    position: relative;
-    appearance: none;
-    -webkit-appearance: none;
-    background: transparent;
-}
-
-/* Ajustamos el icono para que solo se active al tocar el centro o el icono mismo */
-input[type="date"]::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    opacity: 0.6;
-    padding: 5px;
-}
-
-/* 3. ESTILO DE LAS PESTAÑAS (Tabs) */
-#tab-asist, #tab-salid, #tab-falt {
-    transition: all 0.2s ease;
-    border-bottom: 3px solid transparent;
-}
-
-/* 4. ADAPTACIÓN PARA PC */
-@media (min-width: 1025px) {
-    .contenedor-scroll-v {
-        max-height: 420px;
-    }
-    .tarjeta-registro:hover {
-        transform: translateX(5px);
-        background: rgba(255, 255, 255, 0.9);
-        border-color: #e2e8f0;
-    }
-}
-
-/* 5. TARJETAS Y ANIMACIONES */
-.tarjeta-registro {
-    animation: slideIn 0.3s ease-out forwards;
-    transition: all 0.2s ease;
-}
-
-.card-vacia {
-    background: #ffffff;
-    border: 2px dashed #e2e8f0;
-    border-radius: 2rem;
-    padding: 2.5rem 1rem;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-}
-
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.fixed {
-    position: fixed !important;
-}
-    </style>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
-
-    <div class="glass w-full max-w-[420px] flex flex-col justify-between p-6 sm:p-10 rounded-[2.5rem] shadow-2xl transition-all duration-500 bg-white/90 backdrop-blur-lg">
         
+        .shine-effect:hover::after {
+            left: 100%;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #8b8a5d; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="glass p-6 sm:p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] w-[92%] max-w-[400px] transition-all duration-500">
+
         <div id="pantalla-dinamica">
             <div class="text-center">
-                <h1 class="text-5xl sm:text-6xl font-black text-[#8b8a5d] mb-1 tracking-tighter">
-                    SISE<span class="text-slate-300 font-light">MX</span>
-                </h1>
-                <p class="text-slate-400 text-[10px] sm:text-[11px] mb-6 sm:mb-8 italic uppercase tracking-[0.2em] font-bold">
-                    Sistema de Identificación Segura Escolar
-                </p>
+                <h1 class="text-5xl font-black text-[#8b8a5d] mb-1 tracking-tighter">SISE<span class="text-slate-300 font-light">MX</span></h1>
+                <p class="text-slate-400 text-[10px] mb-8 italic uppercase tracking-[0.3em] font-bold">Sistema de Identificación Segura Escolar</p>
                 
-                <h2 class="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Acceso al Sistema</h2>
-                <div class="h-1 w-20 bg-[#8b8a5d] mx-auto mt-3 rounded-full"></div>
+                <h2 id="titulo-seccion" class="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Acceso al Sistema</h2>
+                <div id="barra" class="h-1 w-16 bg-[#8b8a5d] mx-auto mt-3 rounded-full transition-all duration-1000"></div>
             </div>
 
-            <div class="mt-8 sm:mt-10 space-y-4 sm:space-y-6">
-                <input type="text" id="user" placeholder="USUARIO (MATRICULA)" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-[#8b8a5d] outline-none text-sm font-bold shadow-sm transition-all">
+            <div id="zona-interaccion" class="mt-8 space-y-4">
+                <div id="mensaje-error" class="hidden bg-rose-50 text-rose-500 text-[10px] font-bold p-4 rounded-2xl text-center border border-rose-100 animate-bounce uppercase"></div>
                 
-                <div class="relative">
-                    <input type="password" id="pass" placeholder="CONTRASEÑA" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-[#8b8a5d] outline-none text-sm font-bold shadow-sm transition-all">
+                <div class="space-y-3">
+                    <input type="text" id="user" placeholder="USUARIO (MATRICULA)" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#8b8a5d] outline-none text-sm uppercase font-bold tracking-wider shadow-sm transition-all">
+                    
+                    <div class="relative">
+                        <input type="password" id="pass" placeholder="CONTRASEÑA" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-[#8b8a5d] outline-none text-sm font-bold tracking-wider shadow-sm transition-all">
+                        <button type="button" onclick="togglePass()" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#8b8a5d] transition-colors">
+                            <svg id="ojo-icono" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <button id="btn-login" onclick="validar()" class="w-full flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-[#888c65] to-[#a3a87e] rounded-[2.5rem] shadow-xl active:scale-[0.95] transition-all border-none">
-                    <div class="flex items-center gap-3 sm:gap-4 ml-2">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-right-to-bracket text-white"></i>
-                        </div>
-                        <div class="text-left">
-                            <p class="text-[12px] sm:text-sm font-black text-white uppercase">Entrar al Sistema</p>
-                        </div>
+                <button id="btn-login" onclick="validar()" class="shine-effect group relative w-full flex items-center gap-4 p-2 bg-gradient-to-r from-[#888c65] to-[#a3a87e] rounded-[2rem] shadow-lg shadow-[#888c65]/20 active:scale-[0.97] transition-all border-none cursor-pointer">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-xl shadow-inner">
+                        <i class="fa-solid fa-right-to-bracket text-white"></i>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-white/50 mr-4"></i>
+                    <div class="text-left">
+                        <p class="text-[11px] font-black text-white uppercase tracking-[0.15em]">Entrar</p>
+                        <p class="text-[8px] text-white/70 uppercase font-bold tracking-tighter">Acceso Seguro</p>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 </button>
 
-                <div class="flex flex-col gap-4 items-center pt-6">
-                    <button onclick="mostrarPantallaRegistro()" class="text-[11px] font-black text-[#8b8a5d] uppercase tracking-widest">
-                        Crear cuenta nueva
+                <div class="flex flex-col gap-4 items-center pt-6 px-2">
+                    <button onclick="mostrarPantallaRegistro()" class="group relative w-full flex items-center gap-4 p-2 bg-gradient-to-r from-[#b8c1cc] to-[#9ea9b5] rounded-[2rem] shadow-md active:scale-[0.97] transition-all border border-white/30">
+                        <div class="w-10 h-10 bg-[#5d6144]/10 rounded-full flex items-center justify-center text-md">
+                            <i class="fa-solid fa-user-plus text-slate-700"></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-[9px] font-black text-slate-700 uppercase tracking-[0.1em]">Nuevo Registro</p>
+                            <p class="text-[7px] text-slate-500 uppercase font-bold tracking-tighter">Crear cuenta</p>
+                        </div>
                     </button>
-                    <button onclick="mostrarRecuperacion()" class="text-[10px] font-bold text-slate-400 uppercase">
+                    
+                    <button onclick="mostrarRecuperacion()" class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-[#888c65] transition-all border-b border-transparent hover:border-[#888c65] pb-1">
                         ¿Olvidaste tu Contraseña?
                     </button>
                 </div>
             </div>
         </div>
 
-        <p class="mt-10 text-[9px] text-slate-300 text-center uppercase font-bold italic">
-            SISE MX™ · © 2026
-        </p>
+        <p class="mt-12 text-[8px] text-slate-300 text-center uppercase tracking-[0.4em] font-bold italic">SISE MX™ · © 2026 Todos los derechos reservados.</p>
     </div>
 </body>
+</html>
 
     <script>
         let userData = null;
@@ -249,7 +149,9 @@ function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
-    const urlScript = "https://script.google.com/macros/s/AKfycbyE0jVBPYRwP4n9Q5iRZ4svZlHRx0xAMBxeXh5QTjxHu6yIdBt_s-qXn1wUYhIPM7JDEg/exec";
+
+    // REVISA QUE ESTA URL SEA LA TUYA Y ESTÉ LIMPIA (SIN DOBLE HTTPS)
+    const urlScript = "https://script.google.com/macros/s/AKfycbxrBW5YtDVE4BL8Iy6Hc_yfJp5g9w-ea0LxDMOjcaLw-A8fm_Vhzp8ENlzYYc4RIu3L/exec"; 
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -259,36 +161,32 @@ function validar() {
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    // CREAMOS EL TRUCO PARA SALTAR EL CORS (JSONP)
-    // Creamos un elemento <script> en el aire
     const script = document.createElement('script');
     
-    // Definimos qué hacer cuando Google responda (esta es la función 'callback')
     window.miCallbackSeguro = function(res) {
+        console.log("Respuesta recibida:", res); // Esto te dirá en consola si entraste
         if(res && res.success) {
             userData = res;
-            if(document.getElementById('login-form')) {
-                document.getElementById('login-form').innerHTML = ""; 
-            }
+            const loginForm = document.getElementById('login-form');
+            if(loginForm) loginForm.innerHTML = ""; 
             renderMenu();
         } else {
             mostrarError("Credenciales incorrectas");
             btn.innerText = "ENTRAR AL SISTEMA";
             btn.disabled = false;
         }
-        // Limpiamos el script para no llenar el HTML de basura
         document.body.removeChild(script);
         delete window.miCallbackSeguro;
     };
 
-    // La URL lleva el parámetro callback=miCallbackSeguro
+    // Construimos la URL final con el callback
     script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=miCallbackSeguro`;
     
-    // Si hay un error de red total
     script.onerror = function() {
         mostrarError("Error de conexión");
         btn.disabled = false;
         btn.innerText = "ENTRAR";
+        console.error("No se pudo cargar el script. Revisa la URL y los permisos de 'Anyone'.");
     };
 
     document.body.appendChild(script);
