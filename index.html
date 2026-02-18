@@ -358,8 +358,9 @@ function abrirEscaner() {
         }
 
 
-function verAsistencias(fechaManual = null) {
+async function verAsistencias(fechaManual = null) {
     const zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec"; // Asegúrate que esta sea tu URL actual
     
     // Si no se pasa fecha, usamos la de hoy por defecto
     const fechaHoy = new Date().toISOString().split('T')[0];
@@ -371,12 +372,24 @@ function verAsistencias(fechaManual = null) {
             <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">Sincronizando con el servidor...</p>
         </div>`;
 
-    // Pasamos la fecha a la función del servidor
-    google.script.run.withSuccessHandler(function(res) {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerAsistenciasNavolato', 
+                fecha: fechaParaConsultar 
+            })
+        });
+
+        const res = await response.json();
+
         if(res && res.success) {
             let grupos = [...new Set(res.alumnos.map(a => a.grupo))].filter(g => g).sort();
             
-            // --- NUEVO: SECCIÓN DE CALENDARIO ---
+            // --- SECCIÓN DE CALENDARIO ---
             let htmlCalendario = `
                 <div class="bg-slate-50 p-4 rounded-3xl mb-4 border border-slate-100 shadow-inner">
                     <p class="text-[8px] font-black text-[#8b8a5d] uppercase tracking-widest text-center mb-2">Seleccionar Fecha de Consulta</p>
@@ -385,8 +398,8 @@ function verAsistencias(fechaManual = null) {
                             value="${fechaParaConsultar}"
                             class="flex-1 bg-white border-none rounded-xl px-4 py-2 text-[10px] font-black text-slate-700 outline-none shadow-sm focus:ring-2 focus:ring-[#15803d]">
                         <button onclick="verAsistencias(document.getElementById('fecha-asistencia').value)" 
-                            class="bg-[#15803d] text-white px-4 rounded-xl shadow-md active:scale-95 transition-all">
-                            <i class="fas fa-search text-xs"></i>
+                            class="bg-[#15803d] text-white px-4 rounded-xl shadow-md active:scale-95 transition-all border-none cursor-pointer">
+                            🔍
                         </button>
                     </div>
                 </div>
@@ -464,59 +477,100 @@ function verAsistencias(fechaManual = null) {
                 ${htmlResumen}
                 ${htmlFiltros}
                 ${htmlLista}
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
+                <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
+                    <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
+                </button>
             `;
+        } else {
+            throw new Error(res.mensaje || "No se recibieron datos.");
         }
-    }).obtenerAsistenciasNavolato(fechaParaConsultar); // <-- Enviamos la fecha al servidor
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = `<p class="text-center p-10 text-red-500 font-black text-[10px]">ERROR: ${error.message}</p>
+        <button onclick="renderMenu()" class="w-full p-4 bg-gray-100 rounded-full font-black text-[9px]">VOLVER</button>`;
+    }
 }
 
-        function ejecutarFiltro() {
-            let n = document.getElementById("busq").value.toUpperCase();
-            let g = document.getElementById("selGrupo").value;
-            let filas = document.getElementsByClassName("fila-alumno");
-            let contDiv = document.getElementById("contador-grupo");
-            let totalTxt = document.getElementById("total-grupo");
-            let asistenciasGrupo = 0;
+function ejecutarFiltro() {
+    // 1. Obtener valores de búsqueda y limpiar espacios
+    let n = document.getElementById("busq").value.toUpperCase().trim();
+    let g = document.getElementById("selGrupo").value;
+    let filas = document.getElementsByClassName("fila-alumno");
+    let contDiv = document.getElementById("contador-grupo");
+    let totalTxt = document.getElementById("total-grupo");
+    let asistenciasGrupo = 0;
 
-            for (let i = 0; i < filas.length; i++) {
-                let txt = filas[i].innerText.toUpperCase();
-                let grupoFila = filas[i].getAttribute("data-grupo");
-                let asistio = filas[i].getAttribute("data-asistencia") === "✅";
-                let matchNombre = txt.includes(n);
-                let matchGrupo = (g === "" || grupoFila === g);
-                
-                if (matchNombre && matchGrupo) {
-                    filas[i].style.display = "";
-                    if (asistio) asistenciasGrupo++;
-                } else {
-                    filas[i].style.display = "none";
-                }
-            }
-
-            if (g !== "") {
-                contDiv.classList.remove('hidden');
-                totalTxt.innerText = asistenciasGrupo;
-            } else {
-                contDiv.classList.add('hidden');
-            }
-        }
+    for (let i = 0; i < filas.length; i++) {
+        // Obtenemos el texto completo de la fila
+        let txt = filas[i].innerText.toUpperCase();
+        let grupoFila = filas[i].getAttribute("data-grupo");
         
-function abrirFormularioIncidencias() {
-    const zona = document.getElementById('zona-interaccion');
-    zona.innerHTML = `<p class="text-center p-10 animate-pulse text-[10px] font-black uppercase">Obteniendo menús de Excel...</p>`;
+        // Verificamos asistencia (importante que el atributo coincida con lo que manda Google)
+        // Usamos .includes por si el emoji viene con algún espacio o formato oculto
+        let asistenciaAttr = filas[i].getAttribute("data-asistencia") || "";
+        let asistio = asistenciaAttr.includes("✅");
 
-    google.script.run.withSuccessHandler(function(listas) {
-        let datalistHtml = listas.nombres.map(n => `<option value="${n}">`).join('');
-        let optInc = listas.incidencias.map(i => `<option value="${i}">${i}</option>`).join('');
-        let optRep = listas.reporta.map(r => `<option value="${r}">${r}</option>`).join('');
-        let optAti = listas.atiende.map(a => `<option value="${a}">${a}</option>`).join('');
-        let optAten = listas.atenciones.map(ate => `<option value="${ate}">${ate}</option>`).join('');
+        let matchNombre = txt.includes(n);
+        let matchGrupo = (g === "" || grupoFila === g);
+        
+        if (matchNombre && matchGrupo) {
+            filas[i].style.display = ""; // Mostrar fila
+            // Solo sumamos al contador si el alumno efectivamente asistió
+            if (asistio) {
+                asistenciasGrupo++;
+            }
+        } else {
+            filas[i].style.display = "none"; // Ocultar fila
+        }
+    }
+
+    // Mostrar u ocultar el contador de grupo según la selección
+    if (g !== "" && g !== "GRUPOS") {
+        contDiv.classList.remove('hidden');
+        totalTxt.innerText = asistenciasGrupo;
+    } else {
+        contDiv.classList.add('hidden');
+    }
+}
+        
+async function abrirFormularioIncidencias() {
+    const zona = document.getElementById('zona-interaccion');
+    // Asegúrate de que esta URL sea la de tu implementación más reciente
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+
+    zona.innerHTML = `
+        <div class="text-center p-10">
+            <div class="animate-spin w-10 h-10 border-[4px] border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">Obteniendo menús de Excel...</p>
+        </div>`;
+
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'obtenerListasIncidencias' })
+        });
+
+        const res = await response.json();
+
+        // Verificamos que la respuesta sea exitosa
+        if (!res.success) {
+            throw new Error(res.error || "Error desconocido en el servidor");
+        }
+
+        // Mapeamos los datos recibidos del GS
+        // Importante: Usamos res.nombres, res.incidencias, etc., tal como los configuramos en el return del GS
+        let datalistHtml = res.nombres.map(n => `<option value="${n}">`).join('');
+        let optInc = res.incidencias.map(i => `<option value="${i}">${i}</option>`).join('');
+        let optRep = res.reporta.map(r => `<option value="${r}">${r}</option>`).join('');
+        let optAti = res.atiende.map(a => `<option value="${a}">${a}</option>`).join('');
+        let optAten = res.atenciones.map(ate => `<option value="${ate}">${ate}</option>`).join('');
 
         zona.innerHTML = `
-            <div class="p-4 max-w-md mx-auto bg-white rounded-3xl shadow-lg border border-gray-100">
+            <div class="p-4 max-w-md mx-auto bg-white rounded-3xl shadow-lg border border-gray-100 animar-entrada">
                 <h3 class="text-[11px] font-black text-red-700 uppercase mb-4 text-center tracking-widest">Captura de Incidencias</h3>
                 
                 <div id="status-msg" class="hidden mb-3 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-[10px] font-bold text-center animate-bounce">
@@ -529,55 +583,75 @@ function abrirFormularioIncidencias() {
                         <input list="listaAlumnos" id="inc-nombre" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[11px] outline-none focus:ring-2 focus:ring-red-500 transition-all">
                         <datalist id="listaAlumnos">${datalistHtml}</datalist>
                     </div>
+                    
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                           <label class="text-[9px] font-bold text-gray-400 uppercase ml-2 text-[8px]">Incidencia</label>
-                           <select id="inc-tipo" class="w-full px-2 py-3 rounded-xl border border-gray-200 text-[10px]">${optInc}</select>
+                           <label class="text-[8px] font-bold text-gray-400 uppercase ml-2">Incidencia</label>
+                           <select id="inc-tipo" class="w-full px-2 py-3 rounded-xl border border-gray-200 text-[10px] bg-white">${optInc}</select>
                         </div>
                         <div>
-                           <label class="text-[9px] font-bold text-gray-400 uppercase ml-2 text-[8px]">Reporta</label>
-                           <select id="inc-reporta" class="w-full px-2 py-3 rounded-xl border border-gray-200 text-[10px]">${optRep}</select>
+                           <label class="text-[8px] font-bold text-gray-400 uppercase ml-2">Reporta</label>
+                           <select id="inc-reporta" class="w-full px-2 py-3 rounded-xl border border-gray-200 text-[10px] bg-white">${optRep}</select>
                         </div>
                     </div>
+
                     <div>
                         <label class="text-[9px] font-bold text-gray-400 uppercase ml-2">Atiende</label>
-                        <select id="inc-atiende" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px]">${optAti}</select>
+                        <select id="inc-atiende" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px] bg-white">${optAti}</select>
                     </div>
+
                     <div>
                         <label class="text-[9px] font-bold text-gray-400 uppercase ml-2">Atención Realizada</label>
-                        <select id="inc-atencion" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px]">${optAten}</select>
+                        <select id="inc-atencion" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px] bg-white">${optAten}</select>
                     </div>
+
                     <div>
-                        <label class="text-[9px] font-bold text-gray-400 uppercase ml-2 text-[8px]">Observaciones (Opcional)</label>
-                        <input type="text" id="inc-otro" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px]" placeholder="...">
+                        <label class="text-[8px] font-bold text-gray-400 uppercase ml-2">Observaciones (Opcional)</label>
+                        <input type="text" id="inc-otro" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-[10px]" placeholder="Escribe aquí...">
                     </div>
                     
-<button onclick="enviarIncidencia()" id="btn-save" class="w-full mt-2 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#e11d48] to-[#fb7185] rounded-full shadow-lg shadow-rose-500/20 active:scale-95 transition-all border-none cursor-pointer">
-    <div class="w-8 h-8 rounded-full bg-[#9f1239] flex items-center justify-center text-white text-xs shadow-inner">💾</div>
-    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Guardar Registro</span>
-</button>
+                    <button onclick="enviarIncidencia()" id="btn-save" class="w-full mt-2 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#e11d48] to-[#fb7185] rounded-full shadow-lg shadow-rose-500/20 active:scale-95 transition-all border-none cursor-pointer">
+                        <div class="w-8 h-8 rounded-full bg-[#9f1239] flex items-center justify-center text-white text-xs shadow-inner">💾</div>
+                        <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Guardar Registro</span>
+                    </button>
                     
                     <hr class="my-2 border-gray-100">
 
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
+                    <button onclick="renderMenu()" class="w-full flex items-center justify-center gap-3 py-4 bg-gray-100 rounded-full active:scale-95 transition-all border-none cursor-pointer">
+                        <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em]">Volver al Menú</span>
+                    </button>
                 </div>
             </div>
         `;
-    }).obtenerListasIncidencias();
+    } catch (error) {
+        console.error("Error al cargar incidencias:", error);
+        zona.innerHTML = `
+            <div class="text-center p-10 bg-red-50 rounded-3xl border border-red-100">
+                <p class="text-red-600 font-black text-[10px] uppercase mb-2">Error al obtener datos</p>
+                <p class="text-gray-500 text-[8px] mb-4">${error.message}</p>
+                <button onclick="abrirFormularioIncidencias()" class="px-6 py-2 bg-red-600 text-white rounded-full text-[9px] font-bold uppercase cursor-pointer border-none">Reintentar</button>
+            </div>`;
+    }
 }
 
-function enviarIncidencia() {
+async function enviarIncidencia() {
     const btn = document.getElementById('btn-save');
     const msg = document.getElementById('status-msg');
     const nombre = document.getElementById('inc-nombre');
     const otro = document.getElementById('inc-otro');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
-    if(!nombre.value) return alert("Selecciona un alumno");
+    // Validación básica
+    if(!nombre.value) {
+        alert("Por favor, selecciona un alumno");
+        nombre.focus();
+        return;
+    }
 
+    // Recolectar datos del formulario
     const datos = {
+        accion: 'guardarIncidencia', // Especificamos la acción para el doPost
         nombre: nombre.value,
         incidencia: document.getElementById('inc-tipo').value,
         reporta: document.getElementById('inc-reporta').value,
@@ -586,37 +660,73 @@ function enviarIncidencia() {
         otro: otro.value
     };
 
+    // Estado visual de carga
+    const textoOriginal = btn.innerHTML;
     btn.innerText = "PROCESANDO...";
     btn.disabled = true;
-    btn.classList.add('opacity-50');
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
 
-    google.script.run.withSuccessHandler(function() {
-        // 1. Mostramos el mensaje discreto
-        msg.classList.remove('hidden');
-        
-        // 2. Restauramos el botón
-        btn.innerText = "GUARDAR REGISTRO";
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(datos)
+        });
+
+        const res = await response.json();
+
+        if (res.success) {
+            // 1. Mostrar mensaje de éxito
+            msg.classList.remove('hidden');
+            
+            // 2. Limpiar campos para nueva captura
+            nombre.value = "";
+            otro.value = "";
+            nombre.focus();
+
+            // 3. Ocultar mensaje de éxito después de 3 segundos
+            setTimeout(() => {
+                msg.classList.add('hidden');
+            }, 3000);
+        } else {
+            throw new Error(res.error || "El servidor no pudo guardar el registro.");
+        }
+
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("❌ ERROR AL GUARDAR: " + error.message);
+    } finally {
+        // Restaurar botón independientemente de si hubo éxito o error
+        btn.innerHTML = textoOriginal;
         btn.disabled = false;
-        btn.classList.remove('opacity-50');
-
-        // 3. Limpiamos campos clave para seguir capturando
-        nombre.value = "";
-        otro.value = "";
-        nombre.focus();
-
-        // 4. Desvanecemos el mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-            msg.classList.add('hidden');
-        }, 3000);
-
-    }).guardarIncidenciaEnSheet(datos);
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
 }
 
-function abrirVisualizadorReportes() {
+async function abrirVisualizadorReportes() {
     const zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
+
     zona.innerHTML = `<p class="text-center p-10 animate-pulse text-[10px] font-black uppercase text-gray-400">Cargando alumnos y reportes...</p>`;
 
-    google.script.run.withSuccessHandler(function(data) {
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'consultarReportes' })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || "No se pudo obtener el historial.");
+        }
+
+        // Guardamos el historial en una variable global para que filtrarPorNombre() pueda leerla
         window.todosLosRegistros = data.historial;
         
         // Datalist con la lista completa de la Hoja "Base de datos"
@@ -648,24 +758,31 @@ function abrirVisualizadorReportes() {
                     </div>
                 </div>
 
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
-            </button>
+                <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all border-none cursor-pointer">
+                    <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                    <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
+                </button>
             </div>
         `;
-    }).consultarReportes();
-}
 
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = `
+            <div class="text-center p-10">
+                <p class="text-red-500 font-black text-[10px] uppercase">Error al cargar historial</p>
+                <button onclick="renderMenu()" class="mt-4 px-6 py-2 bg-gray-200 rounded-full text-[9px] font-bold">VOLVER</button>
+            </div>`;
+    }
+}
 // ESTA ES LA FUNCIÓN QUE TE DABA ERROR (Ya está aquí incluida)
 function generarTarjetasHTML(lista) {
     if (lista.length === 0) return "";
     
     return lista.map(reg => `
-        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-amber-500 animate-fade-in">
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-amber-500 animate-fade-in mb-3">
             <div class="flex justify-between items-center mb-2">
                 <span class="text-[8px] font-black text-gray-400 uppercase">${reg.fecha}</span>
-                <span class="bg-amber-100 text-amber-700 text-[8px] px-2 py-0.5 rounded-lg font-black uppercase">${reg.grupo}</span>
+                <span class="bg-amber-100 text-amber-700 text-[8px] px-2 py-0.5 rounded-lg font-black uppercase">${reg.grupo || 'S/G'}</span>
             </div>
             
             <h4 class="text-[10px] font-black text-gray-800 uppercase mb-2 leading-tight">${reg.nombre}</h4>
@@ -688,29 +805,36 @@ function filtrarPorNombre() {
     const valorInput = document.getElementById('buscador-alumno').value.trim().toUpperCase();
     const contenedor = document.getElementById('contenedor-reportes');
     
+    // Si no hay datos cargados aún
+    if (!window.todosLosRegistros) return;
+
     if (!valorInput) {
         contenedor.innerHTML = `<p class="text-center text-[9px] text-gray-400 font-bold p-10 uppercase italic">Escribe el nombre del alumno</p>`;
         return;
     }
 
-    // Filtramos buscando coincidencia exacta
-    const filtrados = window.todosLosRegistros.filter(reg => reg.nombre.toUpperCase() === valorInput);
+    // Filtramos usando INCLUDES para que la búsqueda sea predictiva
+    const filtrados = window.todosLosRegistros.filter(reg => 
+        reg.nombre.toUpperCase().includes(valorInput)
+    );
     
     if (filtrados.length > 0) {
         contenedor.innerHTML = generarTarjetasHTML(filtrados);
     } else {
-        // Mensaje discreto si el alumno no tiene reportes (esperamos a que escriba un poco más)
-        if (valorInput.length > 10) {
+        // Si no hay resultados y el usuario ya escribió suficiente
+        if (valorInput.length > 5) {
             contenedor.innerHTML = `
                 <div class="p-10 text-center opacity-40">
-                    <p class="text-[9px] font-black text-gray-500 uppercase italic">Este alumno no cuenta con incidencias registradas aún.</p>
+                    <p class="text-[9px] font-black text-gray-500 uppercase italic">No se encontraron coincidencias.</p>
                 </div>`;
         }
     }
 }
 // Esta función ahora controla tanto el botón de "Asistencias" como el de "Entradas y Salidas"
-function verRegistroPadre(fecha = null) {
+async function verRegistroPadre(fecha = null) {
+    // Obtenemos la matrícula del usuario logueado
     const matricula = userData ? userData.usuario : null;
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec";
 
     if (!matricula) {
         alert("⚠️ Error: Sesión no válida.");
@@ -724,16 +848,36 @@ function verRegistroPadre(fecha = null) {
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cargando Expediente...</p>
         </div>`;
 
-    // Llamamos a la nueva función del servidor
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (!res || res.error) {
-            zona.innerHTML = `<div class="p-10 text-center"><p class="text-red-500 font-black text-[10px] uppercase">${res ? res.error : 'No hay datos'}</p><button onclick="renderMenu()" class="mt-4 bg-gray-100 px-6 py-2 rounded-xl text-[9px] font-black uppercase">Volver</button></div>`;
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerExpedientePadre', 
+                matricula: matricula, 
+                fecha: fecha 
+            })
+        });
+
+        const res = await response.json();
+
+        if (!res || res.error || !res.success) {
+            zona.innerHTML = `
+                <div class="p-10 text-center">
+                    <p class="text-red-500 font-black text-[10px] uppercase">${res ? res.error : 'No hay datos disponibles'}</p>
+                    <button onclick="renderMenu()" class="mt-4 bg-gray-100 px-6 py-2 rounded-xl text-[9px] font-black uppercase cursor-pointer border-none">Volver</button>
+                </div>`;
             return;
         }
+
         renderizarVistaPadreModerna(res);
-      })
-      .obtenerExpedientePadre(matricula, fecha);
+
+    } catch (error) {
+        console.error("Error en expediente:", error);
+        zona.innerHTML = `<p class="text-center p-10 text-red-500 text-[10px] font-bold uppercase">Error de conexión con el servidor</p>`;
+    }
 }
 
 function renderizarVistaPadreModerna(res) {
@@ -772,14 +916,14 @@ function renderizarVistaPadreModerna(res) {
                         <input type="date" value="${res.fechaConsulta}" onchange="verRegistroPadre(this.value)" 
                                class="w-full bg-white pl-11 pr-4 py-3 rounded-2xl border-none text-[11px] font-bold text-slate-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all">
                     </div>
-                    <button onclick="verRegistroPadre(null)" class="bg-white text-blue-600 h-[44px] px-4 rounded-2xl font-black text-[9px] shadow-sm hover:bg-blue-600 hover:text-white transition-all uppercase tracking-tighter">Hoy</button>
+                    <button onclick="verRegistroPadre(null)" class="bg-white text-blue-600 h-[44px] px-4 rounded-2xl font-black text-[9px] shadow-sm hover:bg-blue-600 hover:text-white transition-all uppercase tracking-tighter border-none cursor-pointer">Hoy</button>
                 </div>
             </div>
 
             <p class="text-[9px] font-black text-slate-400 mb-4 tracking-widest uppercase text-center italic">Movimientos del Día</p>
 
             <div class="space-y-3 mb-6 max-h-[350px] overflow-y-auto custom-scroll pr-1">
-                ${res.movimientos.length > 0 ? res.movimientos.map(mov => `
+                ${res.movimientos && res.movimientos.length > 0 ? res.movimientos.map(mov => `
                     <div class="flex items-center gap-4 bg-white p-3 rounded-[1.8rem] shadow-sm border border-slate-50 transition-all hover:shadow-md">
                         <div class="w-14 h-14 rounded-[1.2rem] overflow-hidden shadow-sm flex-shrink-0 border-2 border-slate-50">
                             <img src="${mov.foto}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/100?text=S/F'">
@@ -803,9 +947,9 @@ function renderizarVistaPadreModerna(res) {
                 `}
             </div>
 
-            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-[#888c65] to-[#b8c1cc] rounded-full shadow-lg active:scale-95 transition-all">
-                <div class="w-8 h-8 rounded-full bg-[#5d6144] flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
-                <span class="text-[10px] font-black text-white uppercase tracking-[0.25em]">Volver al Menú</span>
+            <button onclick="renderMenu()" class="w-full mt-6 flex items-center justify-center gap-3 py-4 bg-gray-100 rounded-full active:scale-95 transition-all border-none cursor-pointer">
+                <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs shadow-inner">🏠</div>
+                <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em]">Volver al Menú</span>
             </button>
         </div>
     `;
