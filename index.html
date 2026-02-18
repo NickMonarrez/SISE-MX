@@ -145,59 +145,47 @@
             }
         }
 
- function validar() {
+async function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
-    
-    // Reemplaza con tu URL real de Apps Script que termina en /exec
-    const urlScript = "https://script.google.com/macros/s/AKfycbyxlLREqx1LUij7V3QUA_pcMJ9dfCL2dTcLI6RnV-r1xQDjt6_hO2pA6RpO4E2NMV9z/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbxHr3RA0_OsAyKj_GcfzrrXCQcHkngZrNDEL0IkrAh6zEgQuw_a1Y2pfCymAfPetaX_uw/exec"; // Asegúrate que sea la nueva /exec
 
     if(!u || !p) {
-        Swal.fire('Atención', 'Completa todos los campos', 'warning');
+        Swal.fire('Atención', 'Campos vacíos', 'warning');
         return;
     }
 
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    // Nombre de la función que recibirá los datos
-    const nombreCallback = 'callback_' + Math.floor(Math.random() * 1000000);
+    try {
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            mode: 'no-cors', // Permite enviar datos a otro dominio sin dramas
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accion: 'login', usuario: u, pass: p })
+        });
 
-    window[nombreCallback] = function(res) {
-        console.log("Respuesta recibida:", res);
+        // Como usamos 'no-cors', no podemos leer la respuesta directamente por seguridad del navegador.
+        // TRUCO: Si el servidor respondió (aunque no leamos el contenido), asumimos éxito parcial 
+        // o reintentamos con un método de lectura si el servidor está configurado.
         
-        if(res && res.success) {
-            userData = res; // Guardamos los datos (rol, plantel, etc)
-            const zona = document.getElementById('pantalla-dinamica');
-            if(zona) zona.innerHTML = ""; // Limpiamos el login
-            renderMenu(); // Dibujamos el menú
+        // Pero para que sea funcional 100% ahora mismo, usa esta versión simplificada:
+        const res = await fetch(`${urlScript}?accion=login&usuario=${u}&pass=${p}`).then(r => r.json());
+        
+        if(res.success) {
+            userData = res;
+            renderMenu();
         } else {
-            Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
-            btn.innerText = "ENTRAR";
-            btn.disabled = false;
+            throw new Error();
         }
 
-        // Limpieza de seguridad
-        delete window[nombreCallback];
-        const scriptBorrar = document.getElementById('temp-script');
-        if(scriptBorrar) scriptBorrar.remove();
-    };
-
-    // Creamos la petición "disfrazada" de Script
-    const script = document.createElement('script');
-    script.id = 'temp-script';
-    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${nombreCallback}`;
-    
-script.onerror = function(err) {
-        // Esto imprimirá en la consola de F12 el error exacto del navegador
-        console.error("Detalle del error de red:", err);
-        Swal.fire('Error', 'El navegador bloqueó la conexión. Prueba desactivando AdBlock.', 'error');
-        btn.disabled = false;
+    } catch (error) {
+        Swal.fire('Error', 'Credenciales incorrectas o error de red', 'error');
         btn.innerText = "ENTRAR";
-    };
-
-    document.head.appendChild(script);
+        btn.disabled = false;
+    }
 }
 
         function cerrarSesion() {
