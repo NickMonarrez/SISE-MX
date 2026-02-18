@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <base target="_top">
     <meta charset="UTF-8">
@@ -143,47 +145,42 @@
             }
         }
 
-function validar() {
-    const u = document.getElementById('user').value.trim();
-    const p = document.getElementById('pass').value.trim();
-    const btn = document.getElementById('btn-login');
-    const urlScript = "https://script.google.com/macros/s/AKfycbw4mRNcuW1bsKu69RKo5l-cq6_g3oh5Uk-wVyA1S9oQbVewJqDZA9h6Tsnc3Y__ZVro2A/exec";
+        function validar() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(!u || !p) {
+                mostrarError("Completa todos los campos");
+                return;
+            }
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "VERIFICANDO...";
+            btn.disabled = true;
 
-    if(!u || !p) {
-        mostrarError("Completa todos los campos");
-        return;
-    }
-
-    btn.innerText = "VERIFICANDO...";
-    btn.disabled = true;
-
-    // Nombre de callback único para evitar caché
-    const cb = 'peticion_' + Date.now();
-
-    window[cb] = function(res) {
-        console.log("Respuesta:", res);
-        if(res && res.success) {
-            userData = res;
-            renderMenu();
-        } else {
-            mostrarError("Datos incorrectos");
-            btn.innerText = "ENTRAR";
-            btn.disabled = false;
+            google.script.run.withSuccessHandler(function(res) {
+                if(res && res.success) {
+                    userData = res;
+                    renderMenu();
+                } else {
+                    mostrarError("Credenciales incorrectas");
+                    btn.innerText = "ENTRAR";
+                    btn.disabled = false;
+                }
+            }).validarAcceso(u, p);
         }
-        delete window[cb];
-        document.getElementById(cb).remove();
-    };
 
-    const s = document.createElement('script');
-    s.id = cb;
-    s.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${cb}`;
-    s.onerror = () => {
-        mostrarError("Error de conexión");
-        btn.disabled = false;
-        btn.innerText = "ENTRAR";
-    };
-    document.head.appendChild(s);
-}
+        function cerrarSesion() {
+            userData = null;
+            const zona = document.getElementById('zona-interaccion');
+            zona.innerHTML = `
+                <div class="text-center p-10">
+                    <div class="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cerrando Sesión Segura...</p>
+                </div>`;
+
+            google.script.run.withSuccessHandler(function(url) {
+                window.open(url, '_top');
+            }).getScriptUrl();
+        }
 
                 // AQUI CAMBIAS EL NOMBRE DEL PLANTEL
         function renderMenu() {
