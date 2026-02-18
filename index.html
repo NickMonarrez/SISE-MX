@@ -245,12 +245,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
             }
         }
 
-async function validar() {
+function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
-    
-    // URL de tu Script de Google (la que obtienes al "Implementar")
-    const urlScript = "https://script.google.com/macros/s/AKfycbxjf_MprBwrZvPE600ZVJuor5ZEj8mcov5ZVMadcD6dO-0ggKuGDRd3aSIFqvA3_Y9aOQ/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbx9rFuqyd2JbO3GZeLO36ms08EobGZW8bVZ4my9GbbVWHn96L63DUwiv5UZSVD87jgoEg/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -258,37 +256,32 @@ async function validar() {
     }
 
     const btn = document.getElementById('btn-login');
-    const textoOriginal = btn.innerHTML; // Guardamos el diseño original
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    try {
-        // Construimos la URL con los parámetros
-        const urlFinal = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
-        
-        // Hacemos la petición
-        const response = await fetch(urlFinal);
-        const texto = await response.text(); // Recibimos como texto plano
-        const res = JSON.parse(texto);      // Lo convertimos a JSON manualmente
+    // PLAN MAESTRO: Crear un formulario temporal que envíe los datos
+    // Esto evita el error de CORS porque el navegador "salta" de página
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = urlScript;
 
-        if(res && res.success) {
-            userData = res;
-            // IMPORTANTE: Asegúrate de que el div 'login-form' exista en tu HTML
-            const loginForm = document.getElementById('login-form');
-            if(loginForm) loginForm.innerHTML = ""; 
-            
-            renderMenu();
-        } else {
-            mostrarError("Credenciales incorrectas");
-            btn.innerHTML = textoOriginal;
-            btn.disabled = false;
-        }
-    } catch (error) {
-        console.error("Error de conexión:", error);
-        mostrarError("Error de conexión con el servidor");
-        btn.innerHTML = textoOriginal;
-        btn.disabled = false;
-    }
+    const inputAccion = document.createElement('input');
+    inputAccion.name = 'accion';
+    inputAccion.value = 'login';
+    form.appendChild(inputAccion);
+
+    const inputUser = document.createElement('input');
+    inputUser.name = 'usuario';
+    inputUser.value = u;
+    form.appendChild(inputUser);
+
+    const inputPass = document.createElement('input');
+    inputPass.name = 'pass';
+    inputPass.value = p;
+    form.appendChild(inputPass);
+
+    document.body.appendChild(form);
+    form.submit(); // Enviamos y redirigimos
 }
 
         function cerrarSesion() {
