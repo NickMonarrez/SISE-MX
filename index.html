@@ -145,13 +145,13 @@
             }
         }
 
-function validar() {
+async function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
 
-    // REVISA QUE ESTA URL SEA LA TUYA Y ESTÉ LIMPIA (SIN DOBLE HTTPS)
-    const urlScript = "https://script.google.com/macros/s/AKfycbxrBW5YtDVE4BL8Iy6Hc_yfJp5g9w-ea0LxDMOjcaLw-A8fm_Vhzp8ENlzYYc4RIu3L/exec"; 
+    // TU URL (Asegúrate que termine en /exec)
+    const urlScript = "https://script.google.com/macros/s/AKfycbzYlYiHqvmm7ZcHcOTZKxJd8umuaJaHZezRurCKswUebVe--RhUJ9vvNsQIFGsBMNGI5A/exec"; 
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -161,35 +161,39 @@ function validar() {
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    const script = document.createElement('script');
-    
-    window.miCallbackSeguro = function(res) {
-        console.log("Respuesta recibida:", res); // Esto te dirá en consola si entraste
+    try {
+        // Usamos fetch pero con redireccionamiento manual para engañar al CORS
+        const urlFinal = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
+        
+        const response = await fetch(urlFinal, {
+            method: 'GET',
+            mode: 'no-cors', // ESTO ES CLAVE: Le dice al navegador que no se ponga estricto
+            cache: 'no-cache'
+        });
+
+        // Como usamos 'no-cors', no podemos leer la respuesta directamente.
+        // TRUCO PRO: Esperamos 2 segundos y si no hubo error de red, 
+        // lanzamos una segunda petición normal (ya que Google ya guardó la sesión).
+        
+        // Pero para no complicarte, probemos primero con esta versión de TEXTO:
+        const resNormal = await fetch(urlFinal);
+        const texto = await resNormal.text();
+        const res = JSON.parse(texto);
+
         if(res && res.success) {
             userData = res;
-            const loginForm = document.getElementById('login-form');
-            if(loginForm) loginForm.innerHTML = ""; 
             renderMenu();
         } else {
             mostrarError("Credenciales incorrectas");
-            btn.innerText = "ENTRAR AL SISTEMA";
             btn.disabled = false;
+            btn.innerText = "ENTRAR";
         }
-        document.body.removeChild(script);
-        delete window.miCallbackSeguro;
-    };
 
-    // Construimos la URL final con el callback
-    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=miCallbackSeguro`;
-    
-    script.onerror = function() {
-        mostrarError("Error de conexión");
-        btn.disabled = false;
-        btn.innerText = "ENTRAR";
-        console.error("No se pudo cargar el script. Revisa la URL y los permisos de 'Anyone'.");
-    };
-
-    document.body.appendChild(script);
+    } catch (error) {
+        console.log("Intentando método alternativo...");
+        // Si el fetch falla, usamos el método de redirección directa
+        window.location.href = `${urlScript}?accion=login&usuario=${u}&pass=${p}&redirect=github`;
+    }
 }
 
         function cerrarSesion() {
