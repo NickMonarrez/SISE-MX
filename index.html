@@ -151,7 +151,7 @@ function validar() {
     const btn = document.getElementById('btn-login');
     
     // URL limpia de tu script (Asegúrate de que sea la de /exec)
-    const urlScript = "https://script.google.com/macros/s/AKfycbxxUiFKdv_T5mqMOem5Mt3JBhO8l5ry42_ek-pZUd3bDXMCe0ApXdap9lR5J9usLN2JGA/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbyi2nyw6ErBmxYc6o9LCcrh1qyBGxvzNq7pS2DwNxqR-BUQD6zTw15IkJkN3ePvbja1Jg/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -165,42 +165,32 @@ function validar() {
     const nombreCallback = 'jsonp_callback_' + Math.round(100000 * Math.random());
 
     // 2. Definimos qué hacer cuando Google nos responda
-    window[nombreCallback] = function(res) {
-        console.log("Respuesta de Google recibida:", res);
+window[nombreCallback] = function(res) {
+        // Esta alerta nos dirá si Google respondió
+        alert("Respuesta recibida: " + JSON.stringify(res)); 
         
         if(res && res.success) {
             userData = res;
-            // Limpiamos el login si existe el contenedor
             const loginForm = document.getElementById('login-form');
-            if(loginForm) loginForm.innerHTML = ""; 
+            if(loginForm) {
+                loginForm.innerHTML = ""; 
+            } else {
+                console.error("No encontré el ID 'login-form'");
+            }
             
-            renderMenu(); // Dibujamos el menú dentro de GitHub
+            if (typeof renderMenu === "function") {
+                renderMenu();
+            } else {
+                alert("Error: La función renderMenu() no existe en tu index");
+            }
         } else {
             mostrarError("Usuario o contraseña incorrectos");
             btn.innerText = "ENTRAR";
             btn.disabled = false;
         }
-
-        // Limpieza: Borramos el script y la función temporal
         document.body.removeChild(script);
         delete window[nombreCallback];
     };
-
-    // 3. Creamos el elemento script para "engañar" al navegador
-    const script = document.createElement('script');
-    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${nombreCallback}`;
-    
-    // Manejo de error si el servidor de Google está caído
-    script.onerror = function() {
-        mostrarError("Error crítico de conexión");
-        btn.disabled = false;
-        btn.innerText = "ENTRAR";
-        delete window[nombreCallback];
-    };
-
-    // 4. Lo insertamos en el HTML para que se ejecute la llamada
-    document.body.appendChild(script);
-}
 
         function cerrarSesion() {
             userData = null;
