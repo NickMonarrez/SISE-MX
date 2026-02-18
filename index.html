@@ -145,28 +145,58 @@
             }
         }
 
-        function validar() {
-            const u = document.getElementById('user').value;
-            const p = document.getElementById('pass').value;
-            if(!u || !p) {
-                mostrarError("Completa todos los campos");
-                return;
-            }
-            const btn = document.getElementById('btn-login');
-            btn.innerText = "VERIFICANDO...";
-            btn.disabled = true;
+ function validar() {
+    const u = document.getElementById('user').value.trim();
+    const p = document.getElementById('pass').value.trim();
+    const btn = document.getElementById('btn-login');
+    
+    // Reemplaza con tu URL real de Apps Script que termina en /exec
+    const urlScript = "https://script.google.com/macros/s/AKfycbyxlLREqx1LUij7V3QUA_pcMJ9dfCL2dTcLI6RnV-r1xQDjt6_hO2pA6RpO4E2NMV9z/exec";
 
-            google.script.run.withSuccessHandler(function(res) {
-                if(res && res.success) {
-                    userData = res;
-                    renderMenu();
-                } else {
-                    mostrarError("Credenciales incorrectas");
-                    btn.innerText = "ENTRAR";
-                    btn.disabled = false;
-                }
-            }).validarAcceso(u, p);
+    if(!u || !p) {
+        Swal.fire('Atención', 'Completa todos los campos', 'warning');
+        return;
+    }
+
+    btn.innerText = "VERIFICANDO...";
+    btn.disabled = true;
+
+    // Nombre de la función que recibirá los datos
+    const nombreCallback = 'callback_' + Math.floor(Math.random() * 1000000);
+
+    window[nombreCallback] = function(res) {
+        console.log("Respuesta recibida:", res);
+        
+        if(res && res.success) {
+            userData = res; // Guardamos los datos (rol, plantel, etc)
+            const zona = document.getElementById('pantalla-dinamica');
+            if(zona) zona.innerHTML = ""; // Limpiamos el login
+            renderMenu(); // Dibujamos el menú
+        } else {
+            Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
+            btn.innerText = "ENTRAR";
+            btn.disabled = false;
         }
+
+        // Limpieza de seguridad
+        delete window[nombreCallback];
+        const scriptBorrar = document.getElementById('temp-script');
+        if(scriptBorrar) scriptBorrar.remove();
+    };
+
+    // Creamos la petición "disfrazada" de Script
+    const script = document.createElement('script');
+    script.id = 'temp-script';
+    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${nombreCallback}`;
+    
+    script.onerror = function() {
+        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+        btn.disabled = false;
+        btn.innerText = "ENTRAR";
+    };
+
+    document.head.appendChild(script);
+}
 
         function cerrarSesion() {
             userData = null;
