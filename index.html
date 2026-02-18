@@ -368,6 +368,8 @@ async function verAsistencias(fechaManual = null) {
         // --- CAMBIO CLAVE: FETCH EN LUGAR DE GOOGLE.SCRIPT.RUN ---
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'obtenerAsistenciasNavolato', 
@@ -522,14 +524,17 @@ async function abrirFormularioIncidencias() {
             <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">Preparando Formulario...</p>
         </div>`;
 
-    try {
+try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ accion: 'obtenerListasIncidencias' })
         });
-        const res = await response.json();
 
+        // Ahora sí, 'response' contendrá los datos finales
+        const res = await response.json();
         // Extraemos las listas del objeto que manda Google
         const listas = res.listas; 
         const alumnos = res.alumnos;
@@ -624,6 +629,8 @@ async function enviarIncidencia() {
     try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(datos)
         });
@@ -666,6 +673,8 @@ async function abrirVisualizadorReportes() {
         // Pedimos los datos a Google mediante un POST
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ accion: 'consultarReportes' })
         });
@@ -789,6 +798,8 @@ async function verRegistroPadre(fecha = null) {
         // Petición fetch para reemplazar google.script.run
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'obtenerExpedientePadre', 
@@ -912,7 +923,8 @@ async function verReporteDetallado(matricula) {
 
     try {
         const response = await fetch(urlScript, {
-            method: 'POST',
+            method: 'POST',mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'obtenerAsistenciasAlumno', 
@@ -1024,6 +1036,8 @@ async function verIncidenciasHijo() {
     try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'obtenerIncidenciasAlumno', 
@@ -1089,7 +1103,8 @@ async function verNotificacionesHijo() {
     
     try {
         const response = await fetch(urlScript, {
-            method: 'POST',
+            method: 'POST',mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'obtenerNotificacionesHijo', 
@@ -1148,6 +1163,8 @@ async function actualizarBurbujasPadre() {
     try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'obtenerIncidenciasAlumno', 
@@ -1184,6 +1201,8 @@ async function verUltimaAsistencia() {
         const [respExpediente, respHistorial] = await Promise.all([
             fetch(urlScript, {
                 method: 'POST',
+                mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+                redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ accion: 'obtenerExpedientePadre', matricula: userData.usuario })
             }),
@@ -1505,6 +1524,8 @@ async function ejecutarRegistro() {
     try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'registrarPapaPorPrimeraVez', 
@@ -1613,6 +1634,8 @@ async function ejecutarSolicitudCodigo() {
     try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'enviarCodigoRecuperacion', 
@@ -1677,6 +1700,8 @@ async function ejecutarCambioClave(matricula) {
     try {
         const response = await fetch(urlScript, {
             method: 'POST',
+            mode: 'cors',      // Permite la comunicación entre dominios (Vercel -> Google)
+            redirect: 'follow', // Obliga al navegador a seguir el salto del status 302
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 accion: 'verificarYCambiarPass', 
