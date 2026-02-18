@@ -66,26 +66,35 @@
             const pass = document.getElementById('pass').value.trim();
             const btn = document.getElementById('btn-login');
 
-            // 1. TU URL DE GOOGLE APPS SCRIPT (Web App URL)
-            const urlScript = "https://script.google.com/macros/s/AKfycbwH1NfF0aP2fbn9vk0SmjRb2gdELEI89TnAXChpCTw9EQhTWeYcPXmoUxZfjJMzIQI7qQ/exec";
+            // URL DE TU SCRIPT (Asegúrate de que sea la última versión implementada)
+            const urlScript = "https://script.google.com/macros/s/AKfycbzrPmZoxT1J9NrT4wfWbnWoYgrXSYR6FtH5FKNhegX8XfqosoiDZ9ssQlAc8aGNTg0lYQ/exec";
 
             if (!user || !pass) {
                 Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa tus credenciales.', confirmButtonColor: '#8b8a5d' });
                 return;
             }
 
-            // Bloquear botón mientras carga
             btn.disabled = true;
             const originalContent = btn.innerHTML;
             btn.innerHTML = "<div class='w-full text-center font-black animate-pulse'>VERIFICANDO...</div>";
 
+            // TRUCO PARA EVITAR EL ERROR DE CORS
+            const params = new URLSearchParams({
+                accion: 'login',
+                usuario: user,
+                pass: pass
+            });
+
             try {
-                // 2. PETICIÓN A GOOGLE (Enviando usuario y contraseña)
-                const response = await fetch(`${urlScript}?accion=login&usuario=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
-                const data = await response.json();
+                // Hacemos la petición
+                const response = await fetch(`${urlScript}?${params.toString()}`);
+                
+                // Si la respuesta es exitosa pero el navegador bloquea el JSON directo,
+                // lo leemos como texto y lo convertimos nosotros.
+                const text = await response.text();
+                const data = JSON.parse(text);
 
                 if (data.success) {
-                    // 3. ¡REDIRECCIÓN EXITOSA!
                     Swal.fire({ 
                         icon: 'success', 
                         title: '¡Acceso Correcto!', 
@@ -93,20 +102,28 @@
                         showConfirmButton: false, 
                         timer: 1500 
                     }).then(() => {
-                        // Aquí lo enviamos de regreso al Script para que vea la App completa
-                        // Le pasamos el usuario por URL por si necesitas mostrar su nombre
-                        window.location.href = urlScript + "?view=dashboard&user=" + user;
+                        // REDIRECCIÓN AL DASHBOARD
+                        window.location.href = urlScript + "?view=dashboard&user=" + encodeURIComponent(user);
                     });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Denegado', text: 'Matrícula o contraseña incorrectos.', confirmButtonColor: '#8b8a5d' });
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
                 }
             } catch (error) {
-                console.error(error);
-                Swal.fire({ icon: 'error', title: 'Error de Red', text: 'No se pudo contactar con la base de datos.' });
-            } finally {
+                console.error('Error detallado:', error);
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Error de Conexión', 
+                    text: 'Asegúrate de haber implementado el Script como "Cualquiera" y con una "Nueva Versión".' 
+                });
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
             }
+        }
+    </script>
+</body>
+</html>
         }
     </script>
 </body>
