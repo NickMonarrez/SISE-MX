@@ -151,7 +151,7 @@ async function validar() {
     const btn = document.getElementById('btn-login');
     
     // URL de tu Script de Google
-    const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec"; 
+    const urlScript = "https://script.google.com/macros/s/AKfycbykRP_ZURtLtCANW_nLYskLcL9j-KA6aUavOxrOeUNZdX9nO5r0qvMyTuWeS-qUelQykg/exec"; 
 
     if(!u || !p) {
         Swal.fire('Atención', 'Completa todos los campos', 'warning');
@@ -350,8 +350,9 @@ function abrirEscaner() {
             }, 500);
         }
 
-function verAsistencias(fechaManual = null) {
+async function verAsistencias(fechaManual = null) {
     const zona = document.getElementById('zona-interaccion');
+    const urlScript = "https://script.google.com/macros/s/AKfycbw4HEYaQergQJQWOJpoaZSMd9Fn7lck2vXezJ7Kqt2GZLZcG6-wZrx_XJEM2rP2nykBcA/exec";
     
     // Si no se pasa fecha, usamos la de hoy por defecto
     const fechaHoy = new Date().toISOString().split('T')[0];
@@ -363,12 +364,23 @@ function verAsistencias(fechaManual = null) {
             <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">Sincronizando con el servidor...</p>
         </div>`;
 
-    // Pasamos la fecha a la función del servidor
-    google.script.run.withSuccessHandler(function(res) {
+    try {
+        // --- CAMBIO CLAVE: FETCH EN LUGAR DE GOOGLE.SCRIPT.RUN ---
+        const response = await fetch(urlScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'obtenerAsistenciasNavolato', 
+                fecha: fechaParaConsultar 
+            })
+        });
+
+        const res = await response.json();
+
         if(res && res.success) {
             let grupos = [...new Set(res.alumnos.map(a => a.grupo))].filter(g => g).sort();
             
-            // --- NUEVO: SECCIÓN DE CALENDARIO ---
+            // --- TU LÓGICA DE HTML (IGUAL QUE ANTES) ---
             let htmlCalendario = `
                 <div class="bg-slate-50 p-4 rounded-3xl mb-4 border border-slate-100 shadow-inner">
                     <p class="text-[8px] font-black text-[#8b8a5d] uppercase tracking-widest text-center mb-2">Seleccionar Fecha de Consulta</p>
@@ -462,7 +474,11 @@ function verAsistencias(fechaManual = null) {
             </button>
             `;
         }
-    }).obtenerAsistenciasNavolato(fechaParaConsultar); // <-- Enviamos la fecha al servidor
+    } catch (error) {
+        console.error("Error:", error);
+        zona.innerHTML = `<p class="text-center p-10 text-red-500 font-bold text-[10px]">Error al conectar con el servidor.</p>
+                          <button onclick="renderMenu()" class="w-full p-2 bg-gray-200 rounded-xl uppercase text-[9px] font-black">Volver</button>`;
+    }
 }
 
         function ejecutarFiltro() {
