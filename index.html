@@ -189,8 +189,10 @@
     script.id = 'temp-script';
     script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${nombreCallback}`;
     
-    script.onerror = function() {
-        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+script.onerror = function(err) {
+        // Esto imprimirá en la consola de F12 el error exacto del navegador
+        console.error("Detalle del error de red:", err);
+        Swal.fire('Error', 'El navegador bloqueó la conexión. Prueba desactivando AdBlock.', 'error');
         btn.disabled = false;
         btn.innerText = "ENTRAR";
     };
