@@ -249,8 +249,8 @@ async function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     
-    // Asegúrate de poner tu URL de ejecución (la que termina en /exec)
-    const urlScript = "https://script.google.com/macros/s/AKfycbwLmZbtKt02HJ0sjSdcjsWbhjww3gVwHGSkGMchUaDsbkW1LUMDqqLUkBxY0ccfBk99Sw/exec";
+    // URL de tu Script de Google (la que obtienes al "Implementar")
+    const urlScript = "https://script.google.com/macros/s/AKfycbxjf_MprBwrZvPE600ZVJuor5ZEj8mcov5ZVMadcD6dO-0ggKuGDRd3aSIFqvA3_Y9aOQ/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -258,32 +258,35 @@ async function validar() {
     }
 
     const btn = document.getElementById('btn-login');
-    const originalContent = btn.innerHTML; // Guardamos el diseño original (iconos, etc)
+    const textoOriginal = btn.innerHTML; // Guardamos el diseño original
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
     try {
-        // Llamada externa al Google Apps Script
-        const response = await fetch(`${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`);
+        // Construimos la URL con los parámetros
+        const urlFinal = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
         
-        // Google nos responde un texto que convertimos a objeto JSON
-        const text = await response.text();
-        const res = JSON.parse(text);
+        // Hacemos la petición
+        const response = await fetch(urlFinal);
+        const texto = await response.text(); // Recibimos como texto plano
+        const res = JSON.parse(texto);      // Lo convertimos a JSON manualmente
 
         if(res && res.success) {
             userData = res;
-            // Limpiamos el contenido del login para que no se encime con el menú
-            document.getElementById('login-form').innerHTML = ""; 
+            // IMPORTANTE: Asegúrate de que el div 'login-form' exista en tu HTML
+            const loginForm = document.getElementById('login-form');
+            if(loginForm) loginForm.innerHTML = ""; 
+            
             renderMenu();
         } else {
             mostrarError("Credenciales incorrectas");
-            btn.innerHTML = originalContent;
+            btn.innerHTML = textoOriginal;
             btn.disabled = false;
         }
     } catch (error) {
         console.error("Error de conexión:", error);
-        mostrarError("Error de red o base de datos");
-        btn.innerHTML = originalContent;
+        mostrarError("Error de conexión con el servidor");
+        btn.innerHTML = textoOriginal;
         btn.disabled = false;
     }
 }
