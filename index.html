@@ -248,40 +248,50 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
-    const urlScript = "https://script.google.com/macros/s/AKfycbx9rFuqyd2JbO3GZeLO36ms08EobGZW8bVZ4my9GbbVWHn96L63DUwiv5UZSVD87jgoEg/exec";
+    const btn = document.getElementById('btn-login');
+    const urlScript = "https://script.google.com/macros/s/AKfycbxjf_MprBwrZvPE600ZVJuor5ZEj8mcov5ZVMadcD6dO-0ggKuGDRd3aSIFqvA3_Y9aOQ/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
         return;
     }
 
-    const btn = document.getElementById('btn-login');
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    // PLAN MAESTRO: Crear un formulario temporal que envíe los datos
-    // Esto evita el error de CORS porque el navegador "salta" de página
-    const form = document.createElement('form');
-    form.method = 'GET';
-    form.action = urlScript;
+    // CREAMOS EL TRUCO PARA SALTAR EL CORS (JSONP)
+    // Creamos un elemento <script> en el aire
+    const script = document.createElement('script');
+    
+    // Definimos qué hacer cuando Google responda (esta es la función 'callback')
+    window.miCallbackSeguro = function(res) {
+        if(res && res.success) {
+            userData = res;
+            if(document.getElementById('login-form')) {
+                document.getElementById('login-form').innerHTML = ""; 
+            }
+            renderMenu();
+        } else {
+            mostrarError("Credenciales incorrectas");
+            btn.innerText = "ENTRAR AL SISTEMA";
+            btn.disabled = false;
+        }
+        // Limpiamos el script para no llenar el HTML de basura
+        document.body.removeChild(script);
+        delete window.miCallbackSeguro;
+    };
 
-    const inputAccion = document.createElement('input');
-    inputAccion.name = 'accion';
-    inputAccion.value = 'login';
-    form.appendChild(inputAccion);
+    // La URL lleva el parámetro callback=miCallbackSeguro
+    script.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=miCallbackSeguro`;
+    
+    // Si hay un error de red total
+    script.onerror = function() {
+        mostrarError("Error de conexión");
+        btn.disabled = false;
+        btn.innerText = "ENTRAR";
+    };
 
-    const inputUser = document.createElement('input');
-    inputUser.name = 'usuario';
-    inputUser.value = u;
-    form.appendChild(inputUser);
-
-    const inputPass = document.createElement('input');
-    inputPass.name = 'pass';
-    inputPass.value = p;
-    form.appendChild(inputPass);
-
-    document.body.appendChild(form);
-    form.submit(); // Enviamos y redirigimos
+    document.body.appendChild(script);
 }
 
         function cerrarSesion() {
