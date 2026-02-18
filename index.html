@@ -196,19 +196,26 @@ async function validar() {
     }
 }
 
-        function cerrarSesion() {
-            userData = null;
-            const zona = document.getElementById('zona-interaccion');
-            zona.innerHTML = `
-                <div class="text-center p-10">
-                    <div class="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cerrando Sesión Segura...</p>
-                </div>`;
+function cerrarSesion() {
+    // 1. Limpiamos los datos del usuario en memoria
+    userData = null;
+    
+    // 2. Si usas localStorage para mantener la sesión iniciada, hay que limpiarlo
+    localStorage.removeItem('userSISE'); // O el nombre que uses para guardar la sesión
 
-            google.script.run.withSuccessHandler(function(url) {
-                window.open(url, '_top');
-            }).getScriptUrl();
-        }
+    const zona = document.getElementById('zona-interaccion');
+    zona.innerHTML = `
+        <div class="text-center p-10">
+            <div class="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cerrando Sesión Segura...</p>
+        </div>`;
+
+    // 3. En lugar de google.script.run, simplemente recargamos la página
+    // Esto limpia todo el estado de la app y vuelve al login automáticamente
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000); // Le damos 1 segundo para que se vea la animación de cierre
+}
 
                 // AQUI CAMBIAS EL NOMBRE DEL PLANTEL
 function renderMenu() {
