@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="es">
-<base target="_top">
+<head>
+    <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -149,7 +147,7 @@ function validar() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const btn = document.getElementById('btn-login');
-    const urlScript = "https://script.google.com/macros/s/AKfycbzGZzUM1325eTxrYA2aYaa5QlPe4hP9c9IB_mTrG0Mqy9RIGqfxXbGuuUdKBYUKpJ-h/exec";
+    const urlScript = "https://script.google.com/macros/s/AKfycbw4mRNcuW1bsKu69RKo5l-cq6_g3oh5Uk-wVyA1S9oQbVewJqDZA9h6Tsnc3Y__ZVro2A/exec";
 
     if(!u || !p) {
         mostrarError("Completa todos los campos");
@@ -159,48 +157,33 @@ function validar() {
     btn.innerText = "VERIFICANDO...";
     btn.disabled = true;
 
-    // Escuchamos la respuesta que vendrá del Iframe
-    const manejarRespuesta = function(event) {
-        // Solo aceptamos mensajes que vengan de Google
-        if (!event.origin.includes('google.com')) return;
-        
-        const res = JSON.parse(event.data);
-        console.log("Datos recibidos:", res);
+    // Nombre de callback único para evitar caché
+    const cb = 'peticion_' + Date.now();
 
+    window[cb] = function(res) {
+        console.log("Respuesta:", res);
         if(res && res.success) {
             userData = res;
             renderMenu();
         } else {
-            mostrarError("Credenciales incorrectas");
+            mostrarError("Datos incorrectos");
             btn.innerText = "ENTRAR";
             btn.disabled = false;
         }
-        // Limpieza
-        window.removeEventListener('message', manejarRespuesta);
-        document.body.removeChild(iframe);
+        delete window[cb];
+        document.getElementById(cb).remove();
     };
 
-    window.addEventListener('message', manejarRespuesta);
-
-    // Creamos un iframe invisible para hacer la petición
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&modo=iframe`;
-    document.body.appendChild(iframe);
+    const s = document.createElement('script');
+    s.id = cb;
+    s.src = `${urlScript}?accion=login&usuario=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}&callback=${cb}`;
+    s.onerror = () => {
+        mostrarError("Error de conexión");
+        btn.disabled = false;
+        btn.innerText = "ENTRAR";
+    };
+    document.head.appendChild(s);
 }
-        function cerrarSesion() {
-            userData = null;
-            const zona = document.getElementById('zona-interaccion');
-            zona.innerHTML = `
-                <div class="text-center p-10">
-                    <div class="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cerrando Sesión Segura...</p>
-                </div>`;
-
-            google.script.run.withSuccessHandler(function(url) {
-                window.open(url, '_top');
-            }).getScriptUrl();
-        }
 
                 // AQUI CAMBIAS EL NOMBRE DEL PLANTEL
         function renderMenu() {
