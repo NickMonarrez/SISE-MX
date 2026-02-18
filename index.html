@@ -61,66 +61,44 @@
     </div>
 
     <script>
-        async function validar() {
-            const user = document.getElementById('user').value.trim();
-            const pass = document.getElementById('pass').value.trim();
-            const btn = document.getElementById('btn-login');
+function validar() {
+    const user = document.getElementById('user').value.trim();
+    const pass = document.getElementById('pass').value.trim();
+    const btn = document.getElementById('btn-login');
+    const urlScript = "https://script.google.com/macros/s/AKfycbwH1NfF0aP2fbn9vk0SmjRb2gdELEI89TnAXChpCTw9EQhTWeYcPXmoUxZfjJMzIQI7qQ/exec";
 
-            // URL DE TU SCRIPT (Asegúrate de que sea la última versión implementada)
-            const urlScript = "https://script.google.com/macros/s/AKfycbzrPmZoxT1J9NrT4wfWbnWoYgrXSYR6FtH5FKNhegX8XfqosoiDZ9ssQlAc8aGNTg0lYQ/exec";
+    if (!user || !pass) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa tus credenciales.' });
+        return;
+    }
 
-            if (!user || !pass) {
-                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Ingresa tus credenciales.', confirmButtonColor: '#8b8a5d' });
-                return;
-            }
+    btn.disabled = true;
+    btn.innerHTML = "<div class='w-full text-center font-black animate-pulse'>CARGANDO...</div>";
 
-            btn.disabled = true;
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = "<div class='w-full text-center font-black animate-pulse'>VERIFICANDO...</div>";
+    // CREAMOS UN FORMULARIO EN EL AIRE Y LO ENVIAMOS
+    // Esto evita el error de CORS al 100%
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = urlScript;
 
-            // TRUCO PARA EVITAR EL ERROR DE CORS
-            const params = new URLSearchParams({
-                accion: 'login',
-                usuario: user,
-                pass: pass
-            });
+    const inputAccion = document.createElement('input');
+    inputAccion.name = 'accion';
+    inputAccion.value = 'login';
+    form.appendChild(inputAccion);
 
-            try {
-                // Hacemos la petición
-                const response = await fetch(`${urlScript}?${params.toString()}`);
-                
-                // Si la respuesta es exitosa pero el navegador bloquea el JSON directo,
-                // lo leemos como texto y lo convertimos nosotros.
-                const text = await response.text();
-                const data = JSON.parse(text);
+    const inputUser = document.createElement('input');
+    inputUser.name = 'usuario';
+    inputUser.value = user;
+    form.appendChild(inputUser);
 
-                if (data.success) {
-                    Swal.fire({ 
-                        icon: 'success', 
-                        title: '¡Acceso Correcto!', 
-                        text: 'Cargando tu sesión...', 
-                        showConfirmButton: false, 
-                        timer: 1500 
-                    }).then(() => {
-                        // REDIRECCIÓN AL DASHBOARD
-                        window.location.href = urlScript + "?view=dashboard&user=" + encodeURIComponent(user);
-                    });
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Denegado', text: 'Matrícula o contraseña incorrectos.', confirmButtonColor: '#8b8a5d' });
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            } catch (error) {
-                console.error('Error detallado:', error);
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Error de Conexión', 
-                    text: 'Asegúrate de haber implementado el Script como "Cualquiera" y con una "Nueva Versión".' 
-                });
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            }
-        }
+    const inputPass = document.createElement('input');
+    inputPass.name = 'pass';
+    inputPass.value = pass;
+    form.appendChild(inputPass);
+
+    document.body.appendChild(form);
+    form.submit(); // ¡BUM! Adiós error de CORS
+}
     </script>
 </body>
 </html>
